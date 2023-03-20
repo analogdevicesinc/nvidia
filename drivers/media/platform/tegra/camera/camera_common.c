@@ -723,6 +723,9 @@ int camera_common_g_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
 		return -EINVAL;
 	fmt = s_data->colorfmt;
 
+	if (WARN_ON(!fmt))
+		return -EINVAL;
+
 	mf->code	= fmt->code;
 	mf->colorspace	= fmt->colorspace;
 	mf->width	= s_data->fmt_width;
