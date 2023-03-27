@@ -925,11 +925,7 @@ static int tegra_csi_channel_init_one(struct tegra_csi_channel *chan)
 		chan->pads[0].flags = MEDIA_PAD_FL_SINK;
 		chan->pads[1].flags = MEDIA_PAD_FL_SOURCE;
 	}
-	ret = snprintf(sd->name, sizeof(sd->name), "%s-%d",
-			 chan->pg_mode ? "tpg" :
-			 (strlen(csi->devname) == 0 ?
-			  dev_name(csi->dev) : csi->devname),
-			  (chan->id - csi->num_channels));
+	ret = snprintf(sd->name, sizeof(sd->name), "nvcsi%d", chan->id);
 	if (ret < 0)
 		return -EINVAL;
 
