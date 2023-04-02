@@ -680,17 +680,19 @@ static int sensor_common_init_i2c_device_config(
 	err = of_property_read_u32_index(parent, "reg", 1, &value);
 	if (err) {
 		dev_err(dev, "i2c bus regbase unavailable\n");
-		return err;
+		goto skip_reg_base;
 	}
 	i2c_sensor->bus.reg_base = value;
 
+skip_reg_base:
 	err = of_property_read_u32(parent, "clock-frequency", &value);
 	if (err) {
 		dev_err(dev, "bus clock frequency unavailable\n");
-		return err;
+		goto skip_clk_rate;
 	}
 	i2c_sensor->bus.clk_rate = value;
 
+skip_clk_rate:
 	of_node_put(parent);
 	/*
 	 * Read any additional flags to configure I2C for any
