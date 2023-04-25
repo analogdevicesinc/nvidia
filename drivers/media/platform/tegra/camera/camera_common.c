@@ -1052,7 +1052,7 @@ int camera_common_focuser_s_power(struct v4l2_subdev *sd, int on)
 EXPORT_SYMBOL_GPL(camera_common_focuser_s_power);
 
 int camera_common_initialize(struct camera_common_data *s_data,
-		const char *dev_name)
+		const char *devname)
 {
 	int err = 0;
 	char debugfs_name[35];
@@ -1081,11 +1081,11 @@ int camera_common_initialize(struct camera_common_data *s_data,
 		return err;
 	}
 
-	err = sprintf(debugfs_name, "%s_%c", dev_name, s_data->csi_port + 'a');
+	err = sprintf(debugfs_name, "%s_%s_%c", devname, dev_name(s_data->dev), s_data->csi_port + 'a');
 	if (err < 0)
 		return -EINVAL;
 
-	dev_dbg(s_data->dev, "%s_probe: name %s\n", dev_name, debugfs_name);
+	dev_dbg(s_data->dev, "%s_probe: name %s\n", devname, debugfs_name);
 
 	camera_common_create_debugfs(s_data, debugfs_name);
 
