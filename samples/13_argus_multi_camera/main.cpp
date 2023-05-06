@@ -48,7 +48,7 @@ using namespace EGLStream;
 static const uint32_t            MAX_CAMERA_NUM = 6;
 static const uint32_t            DEFAULT_FRAME_COUNT = 100;
 static const uint32_t            DEFAULT_FPS = 30;
-static const Size2D<uint32_t>    STREAM_SIZE(1920, 1280);
+static Size2D<uint32_t>           STREAM_SIZE;
 static const uint32_t            PACKET_SIZE = 768;
 
 typedef enum
@@ -62,6 +62,8 @@ typedef enum
 uint32_t                   g_stream_num = MAX_CAMERA_NUM;
 uint32_t                   g_frame_count = DEFAULT_FRAME_COUNT;
 uint32_t                   g_mode = MODE_SINGLE;
+uint32_t                   g_width = 1920;
+uint32_t                   g_height = 1280;
 
 #define FD_SOCKET_PATH      "/tmp/fd-share.socket"
 /* Debug print macros */
@@ -800,7 +802,7 @@ static void printHelp()
 static bool parseCmdline(int argc, char * argv[])
 {
     int c;
-    while ((c = getopt(argc, argv, "n:c:m:h")) != -1)
+    while ((c = getopt(argc, argv, "n:c:m:w:h")) != -1)
     {
         switch (c)
         {
@@ -811,6 +813,12 @@ static bool parseCmdline(int argc, char * argv[])
                     printf("Invalid number of streams\n");
                     return false;
                 }
+                break;
+            case 'w':
+                g_width = atoi(optarg);
+                break;
+            case 'h':
+                g_height = atoi(optarg);
                 break;
             case 'c':
                 g_frame_count = atoi(optarg);
@@ -832,6 +840,9 @@ static bool parseCmdline(int argc, char * argv[])
                 return false;
         }
     }
+
+    STREAM_SIZE = Size2D<uint32_t>(g_width, g_height);
+
     return true;
 }
 
