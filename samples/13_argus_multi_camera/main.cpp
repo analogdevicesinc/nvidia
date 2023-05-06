@@ -55,6 +55,8 @@ uint32_t                   g_stream_num = MAX_CAMERA_NUM;
 uint32_t                   g_frame_count = DEFAULT_FRAME_COUNT;
 uint32_t                   g_width = 1920;
 uint32_t                   g_height = 1280;
+uint32_t                   g_cells_h = 3;
+uint32_t                   g_cells_v = 2;
 
 /* Debug print macros */
 #define PRODUCER_PRINT(...) printf("PRODUCER: " __VA_ARGS__)
@@ -207,64 +209,17 @@ ConsumerThread::~ConsumerThread()
 bool ConsumerThread::threadInitialize()
 {
     NvBufSurfTransformRect dstCompRect[MAX_CAMERA_NUM];
-    int32_t spacing = 10;
     NvBufSurf::NvCommonAllocateParams input_params = {0};
 
-    // Initialize destination composite rectangles
-    // The window layout is as below
-    // +-------------------------------+-----------------------------------+
-    // |                                                                   |
-    // |                                    +-------+      +-------+       |
-    // |                                    |       |      |       |       |
-    // |     Frame 0                        |Frame1 |      |Frame2 |       |
-    // |                                    |       |      |       |       |
-    // |                                    +-------+      +-------+       |
-    // |                                                                   |
-    // |                                    +-------+      +-------+       |
-    // |                                    |       |      |       |       |
-    // |                                    |Frame3 |      |Frame4 |       |
-    // |                                    |       |      |       |       |
-    // |                                    +-------+      +-------+       |
-    // |                                                                   |
-    // |                                    +-------+                      |
-    // |                                    |       |                      |
-    // |                                    |Frame5 |                      |
-    // |                                    |       |                      |
-    // |                                    +-------+                      |
-    // |                                                                   |
-    // +-------------------------------+-----------------------------------+
-    int32_t cellWidth = (STREAM_SIZE.width() / 2 - spacing * 3) / 2;
-    int32_t cellHeight = (STREAM_SIZE.height() - spacing * 4) / 3;
+    int32_t cellWidth = STREAM_SIZE.width() / g_cells_h;
+    int32_t cellHeight = STREAM_SIZE.height() / g_cells_v;
 
-    dstCompRect[0].top  = 0;
-    dstCompRect[0].left = 0;
-    dstCompRect[0].width = STREAM_SIZE.width();
-    dstCompRect[0].height = STREAM_SIZE.height();
-
-    dstCompRect[1].top  = spacing;
-    dstCompRect[1].left = STREAM_SIZE.width() / 2 + spacing;
-    dstCompRect[1].width = cellWidth;
-    dstCompRect[1].height = cellHeight;
-
-    dstCompRect[2].top  = spacing;
-    dstCompRect[2].left = STREAM_SIZE.width() / 2 + cellWidth + spacing * 2;
-    dstCompRect[2].width = cellWidth;
-    dstCompRect[2].height = cellHeight;
-
-    dstCompRect[3].top  = cellHeight + spacing * 2;
-    dstCompRect[3].left = STREAM_SIZE.width() / 2 + spacing;
-    dstCompRect[3].width = cellWidth;
-    dstCompRect[3].height = cellHeight;
-
-    dstCompRect[4].top  = cellHeight + spacing * 2;
-    dstCompRect[4].left = STREAM_SIZE.width() / 2 + cellWidth + spacing * 2;
-    dstCompRect[4].width = cellWidth;
-    dstCompRect[4].height = cellHeight;
-
-    dstCompRect[5].top  = cellHeight * 2 + spacing * 3;
-    dstCompRect[5].left = STREAM_SIZE.width() / 2 + spacing;
-    dstCompRect[5].width = cellWidth;
-    dstCompRect[5].height = cellHeight;
+    for (uint32_t i = 0; i < m_streams.size(); i++) {
+        dstCompRect[i].width = cellWidth;
+        dstCompRect[i].height = cellHeight;
+        dstCompRect[i].left = cellWidth * (i % g_cells_h);
+        dstCompRect[i].top  = cellHeight * (i / g_cells_h);
+    }
 
     /* Allocate composited buffer */
     input_params.width = STREAM_SIZE.width();
@@ -429,6 +384,8 @@ static bool execute()
             cameraDevices.size() : MAX_CAMERA_NUM;
     if (streamCount > g_stream_num)
         streamCount = g_stream_num;
+    if (g_cells_h * g_cells_v < streamCount)
+        g_cells_h = streamCount / g_cells_v;
     printf("Streams: %u\n", streamCount);
     for (uint32_t i = 0; i < streamCount; i++)
     {
@@ -501,7 +458,7 @@ static void printHelp()
 static bool parseCmdline(int argc, char * argv[])
 {
     int c;
-    while ((c = getopt(argc, argv, "n:c:w:h:")) != -1)
+    while ((c = getopt(argc, argv, "n:c:w:h:x:y:")) != -1)
     {
         switch (c)
         {
@@ -518,6 +475,12 @@ static bool parseCmdline(int argc, char * argv[])
                 break;
             case 'h':
                 g_height = atoi(optarg);
+                break;
+            case 'x':
+                g_cells_h = atoi(optarg);
+                break;
+            case 'y':
+                g_cells_v = atoi(optarg);
                 break;
             case 'c':
                 g_frame_count = atoi(optarg);
