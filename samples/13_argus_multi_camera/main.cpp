@@ -48,7 +48,7 @@ using namespace EGLStream;
 static const uint32_t            MAX_CAMERA_NUM = 6;
 static const uint32_t            DEFAULT_FRAME_COUNT = 100;
 static const uint32_t            DEFAULT_FPS = 30;
-static const Size2D<uint32_t>    STREAM_SIZE(640, 480);
+static const Size2D<uint32_t>    STREAM_SIZE(1920, 1280);
 static const uint32_t            PACKET_SIZE = 768;
 
 typedef enum
