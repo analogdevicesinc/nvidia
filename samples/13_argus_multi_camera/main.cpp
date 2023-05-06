@@ -206,7 +206,7 @@ ConsumerThread::~ConsumerThread()
 
 bool ConsumerThread::threadInitialize()
 {
-    NvBufSurfTransformRect dstCompRect[6];
+    NvBufSurfTransformRect dstCompRect[MAX_CAMERA_NUM];
     int32_t spacing = 10;
     NvBufSurf::NvCommonAllocateParams input_params = {0};
 
@@ -286,15 +286,15 @@ bool ConsumerThread::threadInitialize()
     /* Initialize composite parameters */
     memset(&m_compositeParam, 0, sizeof(m_compositeParam));
     m_compositeParam.params.composite_blend_flag = NVBUFSURF_TRANSFORM_COMPOSITE;
-    m_compositeParam.params.input_buf_count = (m_streams.size()<6) ? m_streams.size() : 6;
+    m_compositeParam.params.input_buf_count = m_streams.size();
     m_compositeParam.params.composite_blend_filter = NvBufSurfTransformInter_Algo3;
     m_compositeParam.dst_comp_rect = static_cast<NvBufSurfTransformRect*>
-                  (malloc(sizeof(NvBufSurfTransformRect) * 6));
+                  (malloc(sizeof(NvBufSurfTransformRect) * m_streams.size()));
     m_compositeParam.src_comp_rect = static_cast<NvBufSurfTransformRect*>
                   (malloc(sizeof(NvBufSurfTransformRect)
                   * m_compositeParam.params.input_buf_count));
     memcpy(m_compositeParam.dst_comp_rect, &dstCompRect[0],
-                sizeof(NvBufSurfTransformRect) * 6);
+                sizeof(NvBufSurfTransformRect) * m_streams.size());
     for (uint32_t i = 0; i < m_compositeParam.params.input_buf_count; i++)
     {
         m_compositeParam.src_comp_rect[i].top = 0;
