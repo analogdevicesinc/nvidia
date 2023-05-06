@@ -418,6 +418,7 @@ static bool execute()
     /* Get the camera devices */
     std::vector<CameraDevice*> cameraDevices;
     iCameraProvider->getCameraDevices(&cameraDevices);
+    printf("Camera devices: %lu\n", cameraDevices.size());
     if (cameraDevices.size() == 0)
         ORIGINATE_ERROR("No cameras available");
 
@@ -426,6 +427,7 @@ static bool execute()
             cameraDevices.size() : MAX_CAMERA_NUM;
     if (streamCount > g_stream_num)
         streamCount = g_stream_num;
+    printf("Streams: %u\n", streamCount);
     for (uint32_t i = 0; i < streamCount; i++)
     {
         captureHolders[i].reset(new CaptureHolder);
