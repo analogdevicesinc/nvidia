@@ -31,17 +31,16 @@
 namespace ArgusSamples
 {
 
-CudaBayerDemosaicConsumer::CudaBayerDemosaicConsumer(EGLDisplay display, EGLStreamKHR stream,
-                                                     Argus::Size2D<uint32_t> size,
+CudaBayerDemosaicConsumer::CudaBayerDemosaicConsumer(EGLDisplay display,
+                                                     std::vector<EGLStreamKHR> streams,
+                                                     std::vector<Argus::Size2D<uint32_t>> sizes,
                                                      uint32_t frameCount)
     : m_eglDisplay(display)
-    , m_bayerInputStream(stream)
-    , m_bayerSize(size)
     , m_frameCount(frameCount)
 {
-    // ARGB output size is half of the Bayer size after demosaicing.
-    m_outputSize.width() = m_bayerSize.width() / 2;
-    m_outputSize.height() = m_bayerSize.height() / 2;
+    for (unsigned int i = 0; i < streams.size(); i++) {
+        m_streams.emplace_back(display, streams[i], sizes[i]);
+    }
 }
 
 CudaBayerDemosaicConsumer::~CudaBayerDemosaicConsumer()
@@ -53,6 +52,21 @@ bool CudaBayerDemosaicConsumer::threadInitialize()
 {
     PROPAGATE_ERROR(initCUDA(&m_cudaContext));
 
+    for (auto& stream : m_streams) {
+        PROPAGATE_ERROR(stream.initBeforePreview());
+    }
+
+    PROPAGATE_ERROR(initPreview());
+
+    for (auto& stream : m_streams) {
+        PROPAGATE_ERROR(stream.initAfterPreview());
+    }
+
+    return true;
+}
+
+bool CudaBayerDemosaicStream::initBeforePreview()
+{
     // Connect this CUDA consumer to the RAW16 Bayer stream being produced by Argus.
     CUresult cuResult = cuEGLStreamConsumerConnect(
             &m_cudaBayerStreamConnection, m_bayerInputStream);
@@ -68,8 +82,19 @@ bool CudaBayerDemosaicConsumer::threadInitialize()
         ORIGINATE_ERROR("Failed to create EGLStream for RGBA output");
     }
 
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::initPreview()
+{
+    for (auto& stream : m_streams) {
+        m_rgbaOutputStreams.emplace_back(stream.getOutputStream());
+    }
+
     // Connect the OpenGL PreviewConsumer to the RGBA stream.
-    m_previewConsumerThread = new PreviewConsumerThread(m_eglDisplay, m_rgbaOutputStream.get());
+    m_previewConsumerThread = new PreviewConsumerThread(
+        m_eglDisplay, m_rgbaOutputStreams,
+        PreviewConsumerThread::RenderLayout::LAYOUT_TILED);
     if (!m_previewConsumerThread)
     {
         ORIGINATE_ERROR("Failed to allocate preview consumer thread");
@@ -77,9 +102,15 @@ bool CudaBayerDemosaicConsumer::threadInitialize()
     PROPAGATE_ERROR(m_previewConsumerThread->initialize());
     PROPAGATE_ERROR(m_previewConsumerThread->waitRunning());
 
+    return true;
+}
+
+bool CudaBayerDemosaicStream::initAfterPreview()
+{
     // Connect CUDA to the RGBA stream to procude the demosaiced output.
-    cuResult = cuEGLStreamProducerConnect(&m_cudaRGBAStreamConnection, m_rgbaOutputStream.get(),
-                                          m_outputSize.width(), m_outputSize.height());
+    CUresult cuResult = cuEGLStreamProducerConnect(
+            &m_cudaRGBAStreamConnection, m_rgbaOutputStream.get(),
+            m_outputSize.width(), m_outputSize.height());
     if (cuResult != CUDA_SUCCESS)
     {
         ORIGINATE_ERROR("Unable to connect CUDA to EGLStream as a producer (CUresult %s)",
@@ -105,6 +136,8 @@ bool CudaBayerDemosaicConsumer::threadExecute()
     // Wait for the Argus producer to connect to the stream.
     while (true)
     {
+        auto m_bayerInputStream = m_streams[0].getInputStream();
+
         EGLint state = EGL_STREAM_STATE_CONNECTING_KHR;
         if (!eglQueryStreamKHR(m_eglDisplay, m_bayerInputStream, EGL_STREAM_STATE_KHR, &state))
         {
@@ -120,6 +153,19 @@ bool CudaBayerDemosaicConsumer::threadExecute()
     // Acquire and process all of the frames.
     for (uint32_t frame = 0; frame < m_frameCount; frame++)
     {
+        for (auto& stream : m_streams) {
+            PROPAGATE_ERROR(stream.execute(frame));
+        }
+    }
+
+    printf("CUDA CONSUMER:    No more frames. Cleaning up\n");
+    printf("CUDA CONSUMER:    Done\n");
+
+    return true;
+}
+
+bool CudaBayerDemosaicStream::execute(unsigned int frame)
+{
         // Acquire the new Bayer frame from the Argus EGLStream and get the CUDA resource.
         CUgraphicsResource bayerResource = 0;
         CUresult cuResult = cuEGLStreamConsumerAcquireFrame(
@@ -219,15 +265,11 @@ bool CudaBayerDemosaicConsumer::threadExecute()
             ORIGINATE_ERROR("Failed to present frame to EGLStream (CUresult %s).",
                 getCudaErrorString(cuResult));
         }
-    }
 
-    printf("CUDA CONSUMER:    No more frames. Cleaning up\n");
-    printf("CUDA CONSUMER:    Done\n");
-
-    return true;
+        return true;
 }
 
-bool CudaBayerDemosaicConsumer::threadShutdown()
+bool CudaBayerDemosaicStream::shutdownBeforePreview()
 {
     // Disconnect from the Argus RAW16 stream
     CUresult cuResult = cuEGLStreamConsumerDisconnect(&m_cudaBayerStreamConnection);
@@ -245,15 +287,40 @@ bool CudaBayerDemosaicConsumer::threadShutdown()
             getCudaErrorString(cuResult));
     }
 
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::shutdownPreview()
+{
     // Destroy the OpenGL consumer thread.
     m_previewConsumerThread->shutdown();
     delete m_previewConsumerThread;
     m_previewConsumerThread = NULL;
 
+    return true;
+}
+
+bool CudaBayerDemosaicStream::shutdownAfterPreview()
+{
     // Free the RGBA stream buffers.
     for (unsigned int i = 0; i < RGBA_BUFFER_COUNT; i++)
     {
         cuMemFree(m_rgbaBuffers[i]);
+    }
+
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::threadShutdown()
+{
+    for (auto& stream : m_streams) {
+        PROPAGATE_ERROR(stream.shutdownBeforePreview());
+    }
+
+    shutdownPreview();
+
+    for (auto& stream : m_streams) {
+        PROPAGATE_ERROR(stream.shutdownAfterPreview());
     }
 
     PROPAGATE_ERROR(cleanupCUDA(&m_cudaContext));
