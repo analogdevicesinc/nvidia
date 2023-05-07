@@ -144,6 +144,9 @@ static bool execute(const CommonOptions& options)
     // Shut down the window (destroys window's EGLSurface).
     window.shutdown();
 
+    // Cleanup the EGL display
+    PROPAGATE_ERROR(g_display.cleanup());
+
     return true;
 }
 
