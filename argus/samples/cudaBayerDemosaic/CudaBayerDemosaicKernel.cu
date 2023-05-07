@@ -96,7 +96,7 @@ bayerDemosaicKernel(short* bayerSrc,
             uchar4 rgba = bayerToRgba(bayerQuad);
 
             // Optional: Add gain (useful to debug dark output).
-            unsigned int gain = 5;
+            unsigned int gain = 1;
             rgba.x = umin(rgba.x * gain, 255);
             rgba.y = umin(rgba.y * gain, 255);
             rgba.z = umin(rgba.z * gain, 255);
