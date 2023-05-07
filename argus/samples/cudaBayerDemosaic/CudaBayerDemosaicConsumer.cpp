@@ -256,6 +256,8 @@ bool CudaBayerDemosaicConsumer::threadShutdown()
         cuMemFree(m_rgbaBuffers[i]);
     }
 
+    PROPAGATE_ERROR(m_rgbaOutputStream.destroy());
+
     PROPAGATE_ERROR(cleanupCUDA(&m_cudaContext));
 
     return true;
