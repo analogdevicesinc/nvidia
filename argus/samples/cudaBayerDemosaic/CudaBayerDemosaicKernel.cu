@@ -38,35 +38,48 @@
 
 // Constant used to store the component ordering of the Bayer input (used by bayerToRgba).
 // These values provide the indexes into the original data that will provide an RGGB ordering.
-__constant__ short bayerPattern[4];
+__constant__ unsigned int bayerPattern[4];
 
 // Converts a 16-bit Bayer quad to 32bit RGBA. The Bayer components are provided
 // in the order they're stored in the buffer, as this function will also handle
 // the component ordering during conversion using the 'bayerPattern' constant.
 static __device__ uchar4
-bayerToRgba(short bayerQuad[4])
+bayerToRgba(unsigned short bayerQuad[4])
 {
     // Signed 16-bit Bayer maps 1<<14 to white.
-    const float whitePoint = 1<<14;
+    unsigned int whitePoint = 0xfff;
+    unsigned int maxRgba = 0xff;
 
     // Order the Bayer components based on the format component ordering.
-    short r  = bayerQuad[bayerPattern[0]];
-    short g1 = bayerQuad[bayerPattern[1]];
-    short g2 = bayerQuad[bayerPattern[2]];
-    short b  = bayerQuad[bayerPattern[3]];
+    unsigned int shift = 4;
+    unsigned int mask = 0xfff;
+    unsigned int r  = (bayerQuad[bayerPattern[0]] >> shift) & mask;
+    unsigned int g1 = (bayerQuad[bayerPattern[1]] >> shift) & mask;
+    unsigned int g2 = (bayerQuad[bayerPattern[2]] >> shift) & mask;
+    unsigned int b  = (bayerQuad[bayerPattern[3]] >> shift) & mask;
+
+    unsigned int rb = b * maxRgba / whitePoint;
+    unsigned int rg = (g1 + g2) * maxRgba / whitePoint / 2;
+    unsigned int rr = r * maxRgba / whitePoint;
+
+    if (r > whitePoint || g1 > whitePoint || g2 > whitePoint || b > whitePoint ||
+        rr > maxRgba || rg > maxRgba || rb > maxRgba) {
+        printf("wp: %04x, r: %04x, g1: %04x, g2: %04x, b: %04x, rr: %04x, rg: %04x, rb: %04x\n",
+               whitePoint, r, g1, g2, b, rr, rg, rb);
+    }
 
     // Map [0, 1<<14] to [0, 255].
     uchar4 rgba;
-    rgba.x = ((float)b / whitePoint) * 255;
-    rgba.y = ((float)((g1 + g2) / 2) / whitePoint) * 255;
-    rgba.z = ((float)r / whitePoint) * 255;
+    rgba.x = rb;
+    rgba.y = rg;
+    rgba.z = rr;
 
     return rgba;
 }
 
 // Demosaics a Bayer buffer into an RGBA output.
 __global__ void
-bayerDemosaicKernel(short* bayerSrc,
+bayerDemosaicKernel(unsigned short* bayerSrc,
                     int bayerWidth,
                     int bayerHeight,
                     int bayerPitch,
@@ -85,8 +98,8 @@ bayerDemosaicKernel(short* bayerSrc,
         for (int row = y; row < rgbaHeight; row += stepY)
         {
             // Extract the Bayer quad.
-            short* bayerOffset = bayerSrc + (col * 2) + (row * bayerPitch);
-            short bayerQuad[4];
+            unsigned short* bayerOffset = bayerSrc + (col * 2) + (row * bayerPitch);
+            unsigned short bayerQuad[4];
             bayerQuad[0] = *(bayerOffset);
             bayerQuad[1] = *(bayerOffset + 1);
             bayerQuad[2] = *(bayerOffset + (bayerPitch / 2));
@@ -110,7 +123,7 @@ bayerDemosaicKernel(short* bayerSrc,
 // Sets the Bayer pattern constant used to order Bayer components.
 static void setBayerPatternConstant(int bayerFormat)
 {
-    short pattern[4];
+    unsigned int pattern[4];
     if (bayerFormat == CU_EGL_COLOR_FORMAT_BAYER_RGGB)
     {
         pattern[0] = 0;
@@ -164,7 +177,7 @@ int cudaBayerDemosaic(CUdeviceptr bayerSrc,
     cudaEventRecord(start, 0);
 
     bayerDemosaicKernel<<<blocks, threadsPerBlock>>>(
-            (short*)bayerSrc, bayerWidth, bayerHeight, bayerPitch, (uchar4*)rgbaDst);
+            (unsigned short*)bayerSrc, bayerWidth, bayerHeight, bayerPitch, (uchar4*)rgbaDst);
 
     cudaEventRecord(stop, 0);
 
