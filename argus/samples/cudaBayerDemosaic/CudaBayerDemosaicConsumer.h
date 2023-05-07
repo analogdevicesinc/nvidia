@@ -52,34 +52,37 @@ class CudaBayerDemosaicConsumer : public Thread
 {
 public:
 
-    explicit CudaBayerDemosaicConsumer(EGLDisplay display, EGLStreamKHR stream,
-                                       Argus::Size2D<uint32_t> size, uint32_t frameCount);
+    explicit CudaBayerDemosaicConsumer(EGLDisplay display, std::vector<OutputStream*> &streams,
+                                       std::vector<Argus::Size2D<uint32_t>> sizes, uint32_t frameCount);
     ~CudaBayerDemosaicConsumer();
 
 private:
     /** @name Thread methods */
     /**@{*/
+    virtual bool threadInitializeStream(unsigned int idx);
+    virtual bool threadInitializeStreamAfter(unsigned int idx);
+    virtual bool threadExecuteStream(unsigned int frame, unsigned int idx);
     virtual bool threadInitialize();
     virtual bool threadExecute();
+    virtual bool threadShutdownStream(unsigned int idx);
     virtual bool threadShutdown();
     /**@}*/
 
     static const uint32_t RGBA_BUFFER_COUNT = 2; // Number of buffers to alloc in RGBA stream.
 
     EGLDisplay m_eglDisplay;            // EGLDisplay handle.
-    EGLStreamKHR m_bayerInputStream;    // EGLStream between Argus and CUDA.
-    EGLStreamHolder m_rgbaOutputStream; // EGLStream between CUDA and OpenGL.
+    std::vector<EGLStreamKHR> m_bayerInputStreams;
+    std::vector<EGLStreamKHR> m_rgbaOutputStreams;
 
-    Argus::Size2D<uint32_t> m_bayerSize;  // Size of Bayer input.
-    Argus::Size2D<uint32_t> m_outputSize; // Size of RGBA output.
+    std::vector<Argus::Size2D<uint32_t>> m_bayerSizes;
+    std::vector<Argus::Size2D<uint32_t>> m_outputSizes;
 
     uint32_t m_frameCount;              // Number of frames to process.
 
     CUcontext m_cudaContext;
-    CUeglStreamConnection m_cudaBayerStreamConnection; // CUDA handle to Bayer stream.
-    CUeglStreamConnection m_cudaRGBAStreamConnection;  // CUDA handle to RGBA stream.
-
-    CUdeviceptr m_rgbaBuffers[RGBA_BUFFER_COUNT]; // RGBA buffers used for CUDA output.
+    std::vector<CUeglStreamConnection> m_cudaBayerStreamConnections; // CUDA handle to Bayer stream.
+    std::vector<CUeglStreamConnection> m_cudaRGBAStreamConnections;  // CUDA handle to RGBA stream.
+    std::vector<CUdeviceptr> m_rgbaBuffers; // RGBA buffers used for CUDA output.
 
     PreviewConsumerThread* m_previewConsumerThread; // OpenGL consumer thread.
 };
