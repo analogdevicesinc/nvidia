@@ -753,7 +753,10 @@ static void printHelp()
            "                0: Single process\n"
            "                1: Dual processes as sender\n"
            "                2: Dual processes as receiver\n"
-           "  -h            Print this help\n");
+           "  -w <width>    Width of preview\n"
+           "  -h <height>   Height of preview\n"
+           "  -x <cells>    Number of horizontal cells\n"
+           "  -y <cells>    Number of vertical cells\n");
 }
 
 static bool parseCmdline(int argc, char * argv[])
