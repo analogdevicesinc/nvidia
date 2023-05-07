@@ -452,7 +452,11 @@ static void printHelp()
            "Options:\n"
            "  -n <num>      Max number of output streams (1 to 6)\n"
            "  -c <count>    Total frame count\n"
-           "  -h            Print this help\n");
+           "  -w <width>    Width of preview\n"
+           "  -h <height>   Height of preview\n"
+           "  -x <cells>    Number of horizontal cells\n"
+           "  -y <cells>    Number of vertical cells\n"
+           );
 }
 
 static bool parseCmdline(int argc, char * argv[])
