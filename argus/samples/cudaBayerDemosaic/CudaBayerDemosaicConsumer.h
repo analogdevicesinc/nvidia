@@ -38,7 +38,7 @@
 namespace ArgusSamples
 {
 
-static const uint32_t RGBA_BUFFER_COUNT = 2; // Number of buffers to alloc in RGBA stream.
+static const uint32_t RGBA_BUFFER_COUNT = 10; // Number of buffers to alloc in RGBA stream.
 
 class CudaBayerDemosaicStream
 {
