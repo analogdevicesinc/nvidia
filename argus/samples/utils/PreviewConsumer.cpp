@@ -142,7 +142,7 @@ bool PreviewConsumerThread::threadExecute()
     Window &window = Window::getInstance();
 
     // Wait until the Argus producers are connected.
-    PREVIEW_CONSUMER_PRINT("Waiting until %lu producer(s) connect...\n", m_streams.size());
+    PREVIEW_CONSUMER_PRINT("Waiting until producer(s) connect...\n");
     for (std::vector<EGLStreamKHR>::iterator s = m_streams.begin(); s != m_streams.end(); s++)
     {
         while (true)
