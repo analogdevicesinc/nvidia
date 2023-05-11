@@ -51,6 +51,11 @@ CudaBayerDemosaicConsumer::~CudaBayerDemosaicConsumer()
 
 bool CudaBayerDemosaicConsumer::threadInitialize()
 {
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::initializeBeforePreview()
+{
     PROPAGATE_ERROR(initCUDA(&m_cudaContext));
 
     // Connect this CUDA consumer to the RAW16 Bayer stream being produced by Argus.
@@ -68,6 +73,11 @@ bool CudaBayerDemosaicConsumer::threadInitialize()
         ORIGINATE_ERROR("Failed to create EGLStream for RGBA output");
     }
 
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::initializePreview()
+{
     // Connect the OpenGL PreviewConsumer to the RGBA stream.
     m_previewConsumerThread = new PreviewConsumerThread(m_eglDisplay, m_rgbaOutputStream.get());
     if (!m_previewConsumerThread)
@@ -76,6 +86,13 @@ bool CudaBayerDemosaicConsumer::threadInitialize()
     }
     PROPAGATE_ERROR(m_previewConsumerThread->initialize());
     PROPAGATE_ERROR(m_previewConsumerThread->waitRunning());
+
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::initializeAfterPreview()
+{
+    CUresult cuResult;
 
     // Connect CUDA to the RGBA stream to procude the demosaiced output.
     cuResult = cuEGLStreamProducerConnect(&m_cudaRGBAStreamConnection, m_rgbaOutputStream.get(),
