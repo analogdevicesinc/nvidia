@@ -56,10 +56,6 @@ public:
                                        Argus::Size2D<uint32_t> size, uint32_t frameCount);
     ~CudaBayerDemosaicConsumer();
 
-    bool initializeBeforePreview();
-    bool initializePreview();
-    bool initializeAfterPreview();
-
 private:
     /** @name Thread methods */
     /**@{*/

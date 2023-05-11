@@ -118,9 +118,6 @@ static bool execute(const CommonOptions& options)
                                            iEGLOutputStream->getEGLStream(),
                                            iEGLStreamSettings->getResolution(),
                                            options.frameCount());
-    PROPAGATE_ERROR(cudaConsumer.initializeBeforePreview());
-    PROPAGATE_ERROR(cudaConsumer.initializePreview());
-    PROPAGATE_ERROR(cudaConsumer.initializeAfterPreview());
     PROPAGATE_ERROR(cudaConsumer.initialize());
     PROPAGATE_ERROR(cudaConsumer.waitRunning());
 
