@@ -310,8 +310,6 @@ bool CudaBayerDemosaicStream::shutdownAfterPreview()
         cuMemFree(m_rgbaBuffers[i]);
     }
 
-    PROPAGATE_ERROR(m_rgbaOutputStream.destroy());
-
     return true;
 }
 
