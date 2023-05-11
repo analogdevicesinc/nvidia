@@ -158,8 +158,6 @@ bool CudaBayerDemosaicConsumer::threadExecute()
         }
     }
 
-    requestShutdown();
-
     printf("CUDA CONSUMER:    No more frames. Cleaning up\n");
     printf("CUDA CONSUMER:    Done\n");
 
