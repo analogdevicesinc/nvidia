@@ -64,7 +64,7 @@ private:
     virtual bool threadShutdown();
     /**@}*/
 
-    static const uint32_t RGBA_BUFFER_COUNT = 2; // Number of buffers to alloc in RGBA stream.
+    static const uint32_t RGBA_BUFFER_COUNT = 10; // Number of buffers to alloc in RGBA stream.
 
     EGLDisplay m_eglDisplay;            // EGLDisplay handle.
     EGLStreamKHR m_bayerInputStream;    // EGLStream between Argus and CUDA.
