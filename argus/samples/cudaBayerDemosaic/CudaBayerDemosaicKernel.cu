@@ -62,11 +62,13 @@ bayerToRgba(unsigned short bayerQuad[4])
     unsigned int rg = (g1 + g2) * maxRgba / whitePoint / 2;
     unsigned int rr = r * maxRgba / whitePoint;
 
+#if 0
     if (r > whitePoint || g1 > whitePoint || g2 > whitePoint || b > whitePoint ||
         rr > maxRgba || rg > maxRgba || rb > maxRgba) {
         printf("wp: %04x, r: %04x, g1: %04x, g2: %04x, b: %04x, rr: %04x, rg: %04x, rb: %04x\n",
                whitePoint, r, g1, g2, b, rr, rg, rb);
     }
+#endif
 
     // Map [0, 1<<14] to [0, 255].
     uchar4 rgba;
