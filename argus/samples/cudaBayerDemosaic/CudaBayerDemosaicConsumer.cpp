@@ -49,7 +49,54 @@ CudaBayerDemosaicConsumer::~CudaBayerDemosaicConsumer()
     shutdown();
 }
 
+bool CudaBayerDemosaicConsumer::initializeBeforePreview()
+{
+    initializeBeforePreviewStep.main();
+
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::initializePreview()
+{
+    initializePreviewStep.main();
+
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::initializeAfterPreview()
+{
+    initializeAfterPreviewStep.main();
+
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::shutdownBeforePreview()
+{
+    shutdownBeforePreviewStep.main();
+
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::shutdownPreview()
+{
+    shutdownPreviewStep.main();
+
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::shutdownAfterPreview()
+{
+    shutdownAfterPreviewStep.main();
+
+    return true;
+}
+
 bool CudaBayerDemosaicConsumer::threadInitialize()
+{
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::threadInitializeBeforePreview()
 {
     PROPAGATE_ERROR(initCUDA(&m_cudaContext));
 
@@ -68,6 +115,11 @@ bool CudaBayerDemosaicConsumer::threadInitialize()
         ORIGINATE_ERROR("Failed to create EGLStream for RGBA output");
     }
 
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::threadInitializePreview()
+{
     // Connect the OpenGL PreviewConsumer to the RGBA stream.
     m_previewConsumerThread = new PreviewConsumerThread(m_eglDisplay, m_rgbaOutputStream.get());
     if (!m_previewConsumerThread)
@@ -76,6 +128,13 @@ bool CudaBayerDemosaicConsumer::threadInitialize()
     }
     PROPAGATE_ERROR(m_previewConsumerThread->initialize());
     PROPAGATE_ERROR(m_previewConsumerThread->waitRunning());
+
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::threadInitializeAfterPreview()
+{
+    CUresult cuResult;
 
     // Connect CUDA to the RGBA stream to procude the demosaiced output.
     cuResult = cuEGLStreamProducerConnect(&m_cudaRGBAStreamConnection, m_rgbaOutputStream.get(),
@@ -102,6 +161,18 @@ bool CudaBayerDemosaicConsumer::threadInitialize()
 
 bool CudaBayerDemosaicConsumer::threadExecute()
 {
+    initializeBeforePreviewStep.worker([&]() {
+        threadInitializeBeforePreview();
+    });
+
+    initializePreviewStep.worker([&]() {
+        threadInitializePreview();
+    });
+
+    initializeAfterPreviewStep.worker([&]() {
+        threadInitializeAfterPreview();
+    });
+
     // Wait for the Argus producer to connect to the stream.
     while (true)
     {
@@ -224,10 +295,27 @@ bool CudaBayerDemosaicConsumer::threadExecute()
     printf("CUDA CONSUMER:    No more frames. Cleaning up\n");
     printf("CUDA CONSUMER:    Done\n");
 
+    shutdownBeforePreviewStep.worker([&]() {
+        threadShutdownBeforePreview();
+    });
+
+    shutdownPreviewStep.worker([&]() {
+        threadShutdownPreview();
+    });
+
+    shutdownAfterPreviewStep.worker([&]() {
+        threadShutdownAfterPreview();
+    });
+
     return true;
 }
 
 bool CudaBayerDemosaicConsumer::threadShutdown()
+{
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::threadShutdownBeforePreview()
 {
     // Disconnect from the Argus RAW16 stream
     CUresult cuResult = cuEGLStreamConsumerDisconnect(&m_cudaBayerStreamConnection);
@@ -245,11 +333,21 @@ bool CudaBayerDemosaicConsumer::threadShutdown()
             getCudaErrorString(cuResult));
     }
 
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::threadShutdownPreview()
+{
     // Destroy the OpenGL consumer thread.
     m_previewConsumerThread->shutdown();
     delete m_previewConsumerThread;
     m_previewConsumerThread = NULL;
 
+    return true;
+}
+
+bool CudaBayerDemosaicConsumer::threadShutdownAfterPreview()
+{
     // Free the RGBA stream buffers.
     for (unsigned int i = 0; i < RGBA_BUFFER_COUNT; i++)
     {

@@ -121,6 +121,10 @@ static bool execute(const CommonOptions& options)
     PROPAGATE_ERROR(cudaConsumer.initialize());
     PROPAGATE_ERROR(cudaConsumer.waitRunning());
 
+    PROPAGATE_ERROR(cudaConsumer.initializeBeforePreview());
+    PROPAGATE_ERROR(cudaConsumer.initializePreview());
+    PROPAGATE_ERROR(cudaConsumer.initializeAfterPreview());
+
     // Submit the batch of capture requests.
     for (unsigned int frame = 0; frame < options.frameCount(); ++frame)
     {
@@ -136,6 +140,9 @@ static bool execute(const CommonOptions& options)
     iCaptureSession->waitForIdle();
 
     // Shutdown the CUDA consumer.
+    PROPAGATE_ERROR(cudaConsumer.shutdownBeforePreview());
+    PROPAGATE_ERROR(cudaConsumer.shutdownPreview());
+    PROPAGATE_ERROR(cudaConsumer.shutdownAfterPreview());
     PROPAGATE_ERROR(cudaConsumer.shutdown());
 
     // Shut down Argus.

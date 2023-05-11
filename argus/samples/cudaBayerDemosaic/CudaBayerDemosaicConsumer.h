@@ -29,6 +29,9 @@
 #ifndef CUDA_BAYER_DEMOSAIC_CONSUMER_H
 #define CUDA_BAYER_DEMOSAIC_CONSUMER_H
 
+#include <mutex>
+#include <condition_variable>
+
 #include "CUDAHelper.h"
 #include "Error.h"
 #include "PreviewConsumer.h"
@@ -37,6 +40,41 @@
 
 namespace ArgusSamples
 {
+
+class ProcessingStep {
+public:
+
+    template<typename F>
+    void worker(F f) {
+        std::unique_lock<std::mutex> lk(m);
+        cv.wait(lk, [&]{ return ready; });
+
+        f();
+        processed = true;
+
+        lk.unlock();
+        cv.notify_one();
+    }
+
+    void main() {
+        {
+            std::lock_guard<std::mutex> lk(m);
+            ready = true;
+        }
+
+        cv.notify_one();
+
+        {
+            std::unique_lock<std::mutex> lk(m);
+            cv.wait(lk, [&]{ return processed; });
+        }
+    }
+private:
+    bool processed;
+    bool ready;
+    std::mutex m;
+    std::condition_variable cv;
+};
 
 /**
  * The CudaBayerDemosaicConsumer acts as an EGLStream consumer for Bayer buffers output
@@ -56,13 +94,34 @@ public:
                                        Argus::Size2D<uint32_t> size, uint32_t frameCount);
     ~CudaBayerDemosaicConsumer();
 
+    bool initializeBeforePreview();
+    bool initializePreview();
+    bool initializeAfterPreview();
+
+    bool shutdownBeforePreview();
+    bool shutdownPreview();
+    bool shutdownAfterPreview();
+
 private:
     /** @name Thread methods */
     /**@{*/
     virtual bool threadInitialize();
+    virtual bool threadInitializeBeforePreview();
+    virtual bool threadInitializePreview();
+    virtual bool threadInitializeAfterPreview();
+    virtual bool threadShutdownBeforePreview();
+    virtual bool threadShutdownPreview();
+    virtual bool threadShutdownAfterPreview();
     virtual bool threadExecute();
     virtual bool threadShutdown();
     /**@}*/
+
+    ProcessingStep initializeBeforePreviewStep;
+    ProcessingStep initializePreviewStep;
+    ProcessingStep initializeAfterPreviewStep;
+    ProcessingStep shutdownBeforePreviewStep;
+    ProcessingStep shutdownPreviewStep;
+    ProcessingStep shutdownAfterPreviewStep;
 
     static const uint32_t RGBA_BUFFER_COUNT = 10; // Number of buffers to alloc in RGBA stream.
 
