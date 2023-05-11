@@ -234,7 +234,7 @@ bool CaptureHolder::initialize(const SampleOptions& options,
     iEGLStreamSettings->setEGLDisplay(g_display.get());
     iEGLStreamSettings->setPixelFormat(PIXEL_FMT_RAW16);
     iEGLStreamSettings->setResolution(iSensorMode->getResolution());
-    iEGLStreamSettings->setMode(EGL_STREAM_MODE_MAILBOX);
+    iEGLStreamSettings->setMode(EGL_STREAM_MODE_FIFO);
     outputStream = iCaptureSession->createOutputStream(streamSettings);
     IEGLOutputStream *iEGLOutputStream = interface_cast<IEGLOutputStream>(outputStream);
     if (!iEGLOutputStream)
