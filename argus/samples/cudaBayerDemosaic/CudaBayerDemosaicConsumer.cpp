@@ -56,13 +56,6 @@ bool CudaBayerDemosaicConsumer::initializeBeforePreview()
     return true;
 }
 
-bool CudaBayerDemosaicConsumer::initializePreview()
-{
-    initializePreviewStep.main();
-
-    return true;
-}
-
 bool CudaBayerDemosaicConsumer::initializeAfterPreview()
 {
     initializeAfterPreviewStep.main();
@@ -73,13 +66,6 @@ bool CudaBayerDemosaicConsumer::initializeAfterPreview()
 bool CudaBayerDemosaicConsumer::shutdownBeforePreview()
 {
     shutdownBeforePreviewStep.main();
-
-    return true;
-}
-
-bool CudaBayerDemosaicConsumer::shutdownPreview()
-{
-    shutdownPreviewStep.main();
 
     return true;
 }
@@ -118,20 +104,6 @@ bool CudaBayerDemosaicConsumer::threadInitializeBeforePreview()
     return true;
 }
 
-bool CudaBayerDemosaicConsumer::threadInitializePreview()
-{
-    // Connect the OpenGL PreviewConsumer to the RGBA stream.
-    m_previewConsumerThread = new PreviewConsumerThread(m_eglDisplay, m_rgbaOutputStream.get());
-    if (!m_previewConsumerThread)
-    {
-        ORIGINATE_ERROR("Failed to allocate preview consumer thread");
-    }
-    PROPAGATE_ERROR(m_previewConsumerThread->initialize());
-    PROPAGATE_ERROR(m_previewConsumerThread->waitRunning());
-
-    return true;
-}
-
 bool CudaBayerDemosaicConsumer::threadInitializeAfterPreview()
 {
     CUresult cuResult;
@@ -163,10 +135,6 @@ bool CudaBayerDemosaicConsumer::threadExecute()
 {
     initializeBeforePreviewStep.worker([&]() {
         threadInitializeBeforePreview();
-    });
-
-    initializePreviewStep.worker([&]() {
-        threadInitializePreview();
     });
 
     initializeAfterPreviewStep.worker([&]() {
@@ -301,10 +269,6 @@ bool CudaBayerDemosaicConsumer::threadExecute()
         threadShutdownBeforePreview();
     });
 
-    shutdownPreviewStep.worker([&]() {
-        threadShutdownPreview();
-    });
-
     shutdownAfterPreviewStep.worker([&]() {
         threadShutdownAfterPreview();
     });
@@ -334,16 +298,6 @@ bool CudaBayerDemosaicConsumer::threadShutdownBeforePreview()
         ORIGINATE_ERROR("Unable to disconnect CUDA from RGBA EGLStream (CUresult %s)",
             getCudaErrorString(cuResult));
     }
-
-    return true;
-}
-
-bool CudaBayerDemosaicConsumer::threadShutdownPreview()
-{
-    // Destroy the OpenGL consumer thread.
-    m_previewConsumerThread->shutdown();
-    delete m_previewConsumerThread;
-    m_previewConsumerThread = NULL;
 
     return true;
 }

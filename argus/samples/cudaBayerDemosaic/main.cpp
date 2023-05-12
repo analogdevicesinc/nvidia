@@ -122,7 +122,12 @@ static bool execute(const CommonOptions& options)
     PROPAGATE_ERROR(cudaConsumer.waitRunning());
 
     PROPAGATE_ERROR(cudaConsumer.initializeBeforePreview());
-    PROPAGATE_ERROR(cudaConsumer.initializePreview());
+
+    PreviewConsumerThread previewConsumer(iEGLOutputStream->getEGLDisplay(),
+                                          cudaConsumer.getOutputStream());
+    PROPAGATE_ERROR(previewConsumer.initialize());
+    PROPAGATE_ERROR(previewConsumer.waitRunning());
+
     PROPAGATE_ERROR(cudaConsumer.initializeAfterPreview());
 
     // Submit the batch of capture requests.
@@ -141,7 +146,9 @@ static bool execute(const CommonOptions& options)
 
     // Shutdown the CUDA consumer.
     PROPAGATE_ERROR(cudaConsumer.shutdownBeforePreview());
-    PROPAGATE_ERROR(cudaConsumer.shutdownPreview());
+
+    PROPAGATE_ERROR(previewConsumer.shutdown());
+
     PROPAGATE_ERROR(cudaConsumer.shutdownAfterPreview());
     PROPAGATE_ERROR(cudaConsumer.shutdown());
 

@@ -95,32 +95,28 @@ public:
     ~CudaBayerDemosaicConsumer();
 
     bool initializeBeforePreview();
-    bool initializePreview();
     bool initializeAfterPreview();
 
     bool shutdownBeforePreview();
-    bool shutdownPreview();
     bool shutdownAfterPreview();
+
+    EGLStreamKHR getOutputStream() { return m_rgbaOutputStream.get(); }
 
 private:
     /** @name Thread methods */
     /**@{*/
     virtual bool threadInitialize();
     virtual bool threadInitializeBeforePreview();
-    virtual bool threadInitializePreview();
     virtual bool threadInitializeAfterPreview();
     virtual bool threadShutdownBeforePreview();
-    virtual bool threadShutdownPreview();
     virtual bool threadShutdownAfterPreview();
     virtual bool threadExecute();
     virtual bool threadShutdown();
     /**@}*/
 
     ProcessingStep initializeBeforePreviewStep;
-    ProcessingStep initializePreviewStep;
     ProcessingStep initializeAfterPreviewStep;
     ProcessingStep shutdownBeforePreviewStep;
-    ProcessingStep shutdownPreviewStep;
     ProcessingStep shutdownAfterPreviewStep;
 
     static const uint32_t RGBA_BUFFER_COUNT = 10; // Number of buffers to alloc in RGBA stream.
@@ -139,8 +135,6 @@ private:
     CUeglStreamConnection m_cudaRGBAStreamConnection;  // CUDA handle to RGBA stream.
 
     CUdeviceptr m_rgbaBuffers[RGBA_BUFFER_COUNT]; // RGBA buffers used for CUDA output.
-
-    PreviewConsumerThread* m_previewConsumerThread; // OpenGL consumer thread.
 };
 
 }; // namespace ArgusSamples
