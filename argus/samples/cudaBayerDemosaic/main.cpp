@@ -116,8 +116,7 @@ static bool execute(const CommonOptions& options)
     // Create the CUDA Bayer consumer and connect it to the RAW16 output stream.
     CudaBayerDemosaicConsumer cudaConsumer(iEGLOutputStream->getEGLDisplay(),
                                            iEGLOutputStream->getEGLStream(),
-                                           iEGLStreamSettings->getResolution(),
-                                           options.frameCount());
+                                           iEGLStreamSettings->getResolution());
     PROPAGATE_ERROR(cudaConsumer.initialize());
     PROPAGATE_ERROR(cudaConsumer.waitRunning());
 
@@ -130,16 +129,13 @@ static bool execute(const CommonOptions& options)
 
     PROPAGATE_ERROR(cudaConsumer.initializeAfterPreview());
 
-    // Submit the batch of capture requests.
-    for (unsigned int frame = 0; frame < options.frameCount(); ++frame)
-    {
-        Argus::Status status;
-        uint32_t result = iCaptureSession->capture(request.get(), TIMEOUT_INFINITE, &status);
-        if (result == 0)
-        {
-            ORIGINATE_ERROR("Failed to submit capture request (status %x)", status);
-        }
+    if (iCaptureSession->repeat(request.get()) != STATUS_OK) {
+        ORIGINATE_ERROR("Failed to start repeat capture request");
     }
+
+    PROPAGATE_ERROR(window.pollingSleep(options.captureTime()));
+
+    iCaptureSession->stopRepeat();
 
     // Wait until all captures have completed.
     iCaptureSession->waitForIdle();
@@ -174,7 +170,7 @@ int main(int argc, char** argv)
                                         ArgusSamples::CommonOptions::Option_D_CameraDevice |
                                         ArgusSamples::CommonOptions::Option_M_SensorMode |
                                         ArgusSamples::CommonOptions::Option_R_WindowRect |
-                                        ArgusSamples::CommonOptions::Option_F_FrameCount);
+                                        ArgusSamples::CommonOptions::Option_T_CaptureTime);
     if (!options.parse(argc, argv))
         return EXIT_FAILURE;
     if (options.requestedExit())
