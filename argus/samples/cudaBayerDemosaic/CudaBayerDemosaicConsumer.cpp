@@ -32,12 +32,10 @@ namespace ArgusSamples
 {
 
 CudaBayerDemosaicConsumer::CudaBayerDemosaicConsumer(EGLDisplay display, EGLStreamKHR stream,
-                                                     Argus::Size2D<uint32_t> size,
-                                                     uint32_t frameCount)
+                                                     Argus::Size2D<uint32_t> size)
     : m_eglDisplay(display)
     , m_bayerInputStream(stream)
     , m_bayerSize(size)
-    , m_frameCount(frameCount)
 {
     // ARGB output size is half of the Bayer size after demosaicing.
     m_outputSize.width() = m_bayerSize.width() / 2;
@@ -141,24 +139,27 @@ bool CudaBayerDemosaicConsumer::threadExecute()
         threadInitializeAfterPreview();
     });
 
-    // Wait for the Argus producer to connect to the stream.
-    while (true)
+    // Acquire and process all of the frames.
+    uint32_t frame = 0;
+    while (!m_doShutdown)
     {
         EGLint state = EGL_STREAM_STATE_CONNECTING_KHR;
         if (!eglQueryStreamKHR(m_eglDisplay, m_bayerInputStream, EGL_STREAM_STATE_KHR, &state))
         {
             ORIGINATE_ERROR("Failed to query stream state (possible producer failure).");
         }
-        if (state == EGL_STREAM_STATE_NEW_FRAME_AVAILABLE_KHR)
-        {
-            break;
-        }
-        Window::getInstance().pollEvents();
-    }
 
-    // Acquire and process all of the frames.
-    for (uint32_t frame = 0; frame < m_frameCount; frame++)
-    {
+        if (state == EGL_BAD_STREAM_KHR || state == EGL_BAD_STATE_KHR)
+            ORIGINATE_ERROR("EGL stream is in bad state (0x%04x)", state);
+
+        if (state == EGL_STREAM_STATE_DISCONNECTED_KHR)
+            break;
+
+        if (state != EGL_STREAM_STATE_NEW_FRAME_AVAILABLE_KHR)
+            continue;
+
+        frame++;
+
         // Acquire the new Bayer frame from the Argus EGLStream and get the CUDA resource.
         CUgraphicsResource bayerResource = 0;
         CUresult cuResult = cuEGLStreamConsumerAcquireFrame(

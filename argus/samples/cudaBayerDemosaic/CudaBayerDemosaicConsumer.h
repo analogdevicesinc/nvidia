@@ -91,7 +91,7 @@ class CudaBayerDemosaicConsumer : public Thread
 public:
 
     explicit CudaBayerDemosaicConsumer(EGLDisplay display, EGLStreamKHR stream,
-                                       Argus::Size2D<uint32_t> size, uint32_t frameCount);
+                                       Argus::Size2D<uint32_t> size);
     ~CudaBayerDemosaicConsumer();
 
     bool initializeBeforePreview();
@@ -127,8 +127,6 @@ private:
 
     Argus::Size2D<uint32_t> m_bayerSize;  // Size of Bayer input.
     Argus::Size2D<uint32_t> m_outputSize; // Size of RGBA output.
-
-    uint32_t m_frameCount;              // Number of frames to process.
 
     CUcontext m_cudaContext;
     CUeglStreamConnection m_cudaBayerStreamConnection; // CUDA handle to Bayer stream.
