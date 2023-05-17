@@ -295,6 +295,8 @@ bool CudaBayerDemosaicConsumer::threadExecute()
     printf("CUDA CONSUMER:    No more frames. Cleaning up\n");
     printf("CUDA CONSUMER:    Done\n");
 
+    requestShutdown();
+
     shutdownBeforePreviewStep.worker([&]() {
         threadShutdownBeforePreview();
     });
