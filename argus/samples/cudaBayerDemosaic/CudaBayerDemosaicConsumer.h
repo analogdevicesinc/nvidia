@@ -94,6 +94,10 @@ public:
                                        Argus::Size2D<uint32_t> size);
     ~CudaBayerDemosaicConsumer();
 
+    void stopCapture() {
+        requestShutdown();
+    }
+
     bool initializeBeforePreview();
     bool initializeAfterPreview();
 
