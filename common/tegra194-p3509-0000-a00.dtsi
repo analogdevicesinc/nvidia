@@ -16,8 +16,41 @@
 #include "tegra194-p3509-disp.dtsi"
 #include "tegra194-audio-p3668.dtsi"
 #include "tegra194-super-module-e2614-p3509.dtsi"
+
+#define GMSL
+
+#define GMSL_TEGRA_PLATFORM
+#define GMSL_TEGRA_PORT			0
+
+#define GMSL_DES_I2C_LABEL		cam_i2c
+#define GMSL_DES_PHY			2
+#define GMSL_DES_PHY_NUM_LANES		2
+#define GMSL_DES_PHY_ALT_MEM_MAP12
+
+#define GMSL_CAMERA_NUM			4
+#define GMSL_DES_MAX96724
+#define GMSL_SER_0_MAX9295A
+#define GMSL_SER_1_MAX9295A
+#define GMSL_SER_2_MAX96717
+#define GMSL_SER_3_MAX96717
+#define GMSL_CAM_0_TEGRA_OX03A
+#define GMSL_CAM_1_TEGRA_OX03A
+#define GMSL_CAM_2_TEGRA_OX03A
+#define GMSL_CAM_3_TEGRA_OX03A
+
+#if defined(GMSL)
+
+&GMSL_DES_I2C_LABEL {
+	clock-frequency = <100000>;
+};
+
+#include "../../../../../../kernel/kernel-5.10/arch/arm64/boot/dts/gmsl/gmsl.dtsi"
+
+#else
 #include "tegra194-camera-jakku-rbpcv3-imx477.dtsi"
 #include "tegra194-camera-jakku-rbpcv2-imx219.dtsi"
+#endif
+
 / {
 	gpio-keys {
 		compatible = "gpio-keys";
