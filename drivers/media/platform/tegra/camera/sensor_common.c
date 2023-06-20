@@ -511,6 +511,13 @@ static int sensor_common_parse_control_props(
 	} else
 		control->max_framerate = value;
 
+	if (control->min_framerate > control->max_framerate) {
+		dev_warn(dev,
+			 "%s: min_framerate is bigger than max_framerate, correcting\n",
+			 __func__);
+		control->min_framerate = control->max_framerate;
+	}
+
 	err = read_property_u32(node, "step_framerate", &value);
 	if (err) {
 		dev_err(dev, "%s:%s:property missing\n",
@@ -782,6 +789,29 @@ exit:
 	return err;
 }
 
+static int sensor_common_fill_framerates(
+	struct device *dev, struct device_node *np,
+	struct sensor_mode_properties *sensor_mode)
+{
+	struct sensor_control_properties *control = &sensor_mode->control_properties;
+	unsigned int i;
+
+	sensor_mode->num_framerates = (control->max_framerate -
+				       control->min_framerate) /
+				      control->framerate_factor + 1;
+	sensor_mode->framerates = devm_kcalloc(dev, sensor_mode->num_framerates,
+					       sizeof(*sensor_mode->framerates),
+					       GFP_KERNEL);
+	if (!sensor_mode->framerates)
+		return -ENOMEM;
+
+	for (i = 0; i < sensor_mode->num_framerates; i++)
+		sensor_mode->framerates[i] = (control->min_framerate + i *
+					     control->framerate_factor) / 1000000;
+
+	return 0;
+}
+
 int sensor_common_init_sensor_properties(
 	struct device *dev, struct device_node *np,
 	struct sensor_properties *sensor)
@@ -868,6 +898,15 @@ int sensor_common_init_sensor_properties(
 				temp_str);
 			goto fail;
 		}
+
+		err = sensor_common_fill_framerates(dev, node,
+			&sensor->sensor_modes[i]);
+		if (err) {
+			dev_err(dev, "Failed to fill %s framerates props\n",
+				temp_str);
+			goto fail;
+		}
+
 		of_node_put(node);
 	}
 
