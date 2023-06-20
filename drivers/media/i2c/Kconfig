@@ -3,6 +3,15 @@ if VIDEO_V4L2
 menu "NVIDIA overlay Encoders, decoders, sensors and other helper chips"
 	visible if !MEDIA_SUBDRV_AUTOSELECT || COMPILE_TEST
 
+config NV_VIDEO_CAMERA
+	tristate "Generic camera sensor support"
+	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+	help
+	  This driver supports generic camera sensors.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called nv_cam.
+
 config NV_VIDEO_IMX185
 	tristate "IMX185 camera sensor support"
 	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
