@@ -734,6 +734,60 @@ static bool is_isomgr_up(struct device *dev)
 return true;
 }
 
+static int tegra_camera_symlink(struct device_node *np, bool create)
+{
+	const char *targets_prop = "nv,proc-device-tree-targets";
+	const char *paths_prop = "nv,proc-device-tree-paths";
+	struct device_node *camera_np;
+	const char *path;
+	unsigned int num;
+	unsigned int i;
+	int ret;
+
+	ret = of_property_count_strings(np, paths_prop);
+	if (ret < 0)
+		return 0;
+
+	num = ret;
+
+	ret = of_count_phandle_with_args(np, targets_prop, NULL);
+	if (ret < 0)
+		return 0;
+
+	if (num != ret)
+		return -EINVAL;
+
+	for (i = 0; i < num; i++) {
+		camera_np = of_parse_phandle(np, targets_prop, i);
+		if (!camera_np) {
+			ret = -EINVAL;
+			goto err;
+		}
+
+		ret = of_property_read_string_index(np, paths_prop, i, &path);
+		if (ret)
+			goto err;
+
+		if (create) {
+			ret = sysfs_create_link(&np->kobj, &camera_np->kobj, path);
+		} else {
+			sysfs_delete_link(&np->kobj, &camera_np->kobj, path);
+		}
+
+		if (ret)
+			goto err;
+
+		of_node_put(camera_np);
+	}
+
+	return 0;
+
+err:
+	of_node_put(camera_np);
+
+	return ret;
+}
+
 static int tegra_camera_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -800,6 +854,13 @@ static int tegra_camera_probe(struct platform_device *pdev)
 
 	info->en_max_bw = of_property_read_bool(pdev->dev.of_node,
 		"default-max-bw");
+
+	ret = tegra_camera_symlink(pdev->dev.of_node, true);
+	if (ret) {
+		dev_err(info->dev, "failed to create camera symlinks: %d\n", ret);
+		return ret;
+	}
+
 	if (info->en_max_bw == true) {
 #if defined(CONFIG_TEGRA_ISOMGR) || \
    (IS_ENABLED(CONFIG_INTERCONNECT) && IS_ENABLED(CONFIG_TEGRA_T23X_GRHOST))
@@ -1211,6 +1272,8 @@ static int tegra_camera_remove(struct platform_device *pdev)
 	struct tegra_camera_info *info = platform_get_drvdata(pdev);
 
 	dev_info(&pdev->dev, "%s:camera_platform_driver remove\n", __func__);
+
+	tegra_camera_symlink(pdev->dev.of_node, false);
 
 	/* deallocate isomgr bw */
 	if (info->en_max_bw)
