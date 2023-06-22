@@ -28,6 +28,7 @@ struct tegracam_device {
 	bool				is_streaming;
 	/* variables to be filled by the driver to register */
 	char				name[32];
+	char				sd_name[V4L2_SUBDEV_NAME_SIZE];
 	struct i2c_client		*client;
 	struct device			*dev;
 	u32				numctrls;
