@@ -108,8 +108,7 @@ static int nv_cam_write_cmd(struct nv_cam *priv, struct nv_cam_cmd *cmd)
 
 			i += 2;
 		} else {
-			ret = regmap_write(priv->s_data->regmap,
-					   cmd->data[i], cmd->data[i + 1]);
+			ret = nv_cam_write_reg(priv->s_data, cmd->data[i], cmd->data[i + 1]);
 			if (ret)
 				return ret;
 
