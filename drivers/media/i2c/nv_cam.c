@@ -21,6 +21,7 @@
 static const u32 ctrl_cid_list[] = {
 	TEGRA_CAMERA_CID_GAIN,
 	TEGRA_CAMERA_CID_EXPOSURE,
+	TEGRA_CAMERA_CID_EXPOSURE_SHORT,
 	TEGRA_CAMERA_CID_FRAME_RATE,
 	TEGRA_CAMERA_CID_SENSOR_MODE_ID,
 };
@@ -235,6 +236,21 @@ static int nv_cam_set_frame_rate(struct tegracam_device *tc_dev, s64 val)
 
 static int nv_cam_set_exposure(struct tegracam_device *tc_dev, s64 val)
 {
+	struct camera_common_data *s_data = tc_dev->s_data;
+	struct device *dev = s_data->dev;
+
+	dev_err(dev, "set exposure %lld\n", val);
+
+	return 0;
+}
+
+static int nv_cam_set_exposure_short(struct tegracam_device *tc_dev, s64 val)
+{
+	struct camera_common_data *s_data = tc_dev->s_data;
+	struct device *dev = s_data->dev;
+
+	dev_err(dev, "set exposure short %lld\n", val);
+
 	return 0;
 }
 
@@ -243,6 +259,7 @@ static struct tegracam_ctrl_ops nv_cam_ctrl_ops = {
 	.ctrl_cid_list = ctrl_cid_list,
 	.set_gain = nv_cam_set_gain,
 	.set_exposure = nv_cam_set_exposure,
+	.set_exposure_short = nv_cam_set_exposure_short,
 	.set_frame_rate = nv_cam_set_frame_rate,
 	.set_group_hold = nv_cam_set_group_hold,
 };
