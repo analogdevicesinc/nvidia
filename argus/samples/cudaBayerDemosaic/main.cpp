@@ -32,11 +32,22 @@
 #include "CommonOptions.h"
 #include "CudaBayerDemosaicConsumer.h"
 
+#include <csignal>
+#include <cstdlib>
+#include <cstdio>
+#include <unistd.h>
+
 namespace ArgusSamples
 {
 
 // Globals and derived constants.
 EGLDisplayHolder g_display;
+
+bool shouldExit = false;
+
+void sigIntHandlerFn(int s) {
+    shouldExit = true;
+}
 
 class SampleOptions : public CommonOptions
 {
@@ -48,6 +59,8 @@ public:
                         ArgusSamples::CommonOptions::Option_T_CaptureTime)
         , m_numStreams(1)
     {
+        m_captureTime.set(0);
+
         addOption(createValueOption
             ("num", 'n', "COUNT", "Number of streams", m_numStreams));
     }
@@ -145,11 +158,24 @@ static bool execute(const SampleOptions& options)
     PROPAGATE_ERROR(previewConsumer.initialize());
     PROPAGATE_ERROR(previewConsumer.waitRunning());
 
+   struct sigaction sigIntHandler;
+   sigIntHandler.sa_handler = sigIntHandlerFn;
+   sigemptyset(&sigIntHandler.sa_mask);
+   sigIntHandler.sa_flags = 0;
+
+   sigaction(SIGINT, &sigIntHandler, NULL);
+
     for (auto& captureHolder : captureHolders) {
         captureHolder.initializeAfterPreview();
     }
 
-    PROPAGATE_ERROR(window.pollingSleep(options.captureTime()));
+    if (options.captureTime()) {
+        PROPAGATE_ERROR(window.pollingSleep(options.captureTime()));
+    } else {
+        while (!shouldExit) {
+            PROPAGATE_ERROR(window.pollingSleep(1));
+        }
+    }
 
     for (auto& captureHolder : captureHolders) {
         captureHolder.shutdownBeforePreview();
