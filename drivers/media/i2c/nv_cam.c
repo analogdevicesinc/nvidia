@@ -26,14 +26,34 @@ static const u32 ctrl_cid_list[] = {
 };
 
 #define MAX_CHIP_ID_REGS		3
+#define MAX_GAIN_REGS			3
 
 struct nv_cam_cmd {
 	u32 *data;
 	unsigned int len;
 };
 
+struct nv_cam_simple_gain {
+	unsigned int num_regs;
+	u32 min;
+	u32 max;
+	u32 regs[MAX_GAIN_REGS];
+	u32 muls[MAX_GAIN_REGS];
+	u32 divs[MAX_GAIN_REGS];
+	u32 source_masks[MAX_GAIN_REGS];
+	u32 target_masks[MAX_GAIN_REGS];
+};
+
+struct nv_cam_ad_gain {
+	struct nv_cam_simple_gain analog;
+	struct nv_cam_simple_gain digital;
+};
+
 struct nv_cam_mode {
 	struct nv_cam_cmd mode_cmd;
+	struct nv_cam_simple_gain simple_gain;
+	struct nv_cam_ad_gain ad_gain;
+	const char *gain_type;
 };
 
 struct nv_cam {
@@ -63,6 +83,17 @@ static const struct regmap_config sensor_regmap_config = {
 	.use_single_read = true,
 	.use_single_write = true,
 };
+
+
+static unsigned int nv_cam_field_get(unsigned int val, unsigned int mask)
+{
+	return (val & mask) >> __ffs(mask);
+}
+
+static unsigned int nv_cam_field_prep(unsigned int val, unsigned int mask)
+{
+	return (val << __ffs(mask)) & mask;
+}
 
 static inline int nv_cam_read_reg(struct camera_common_data *s_data,
 				  u16 addr, u8 *val)
@@ -124,9 +155,77 @@ static int nv_cam_set_group_hold(struct tegracam_device *tc_dev, bool val)
 	return 0;
 }
 
+static int _nv_cam_set_gain_simple(struct tegracam_device *tc_dev,
+				   struct nv_cam_simple_gain *gain,
+				   s64 val)
+{
+	struct camera_common_data *s_data = tc_dev->s_data;
+	unsigned int i;
+	int ret;
+
+	for (i = 0; i < gain->num_regs; i++) {
+		unsigned int reg_val = val * gain->muls[i] / gain->divs[i];
+
+		reg_val = nv_cam_field_get(reg_val, gain->source_masks[i]);
+		reg_val = nv_cam_field_prep(reg_val, gain->target_masks[i]);
+
+		ret = nv_cam_write_reg(s_data, gain->regs[i], reg_val);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+static int nv_cam_set_gain_simple(struct tegracam_device *tc_dev, s64 val)
+{
+	struct nv_cam *priv = tegracam_get_privdata(tc_dev);
+	struct camera_common_data *s_data = tc_dev->s_data;
+	struct nv_cam_mode *mode = &priv->modes[s_data->mode];
+
+	return _nv_cam_set_gain_simple(tc_dev, &mode->simple_gain, val);
+}
+
+static int nv_cam_set_gain_ad(struct tegracam_device *tc_dev, s64 val)
+{
+	struct nv_cam *priv = tegracam_get_privdata(tc_dev);
+	struct camera_common_data *s_data = tc_dev->s_data;
+	struct nv_cam_mode *mode = &priv->modes[s_data->mode];
+	unsigned int again;
+	unsigned int dgain;
+	int ret;
+
+	again = DIV_ROUND_CLOSEST(val, mode->ad_gain.digital.min);
+	if (again > mode->ad_gain.analog.max)
+		again = mode->ad_gain.analog.max;
+
+	dgain = DIV_ROUND_CLOSEST(val, again);
+	if (dgain > mode->ad_gain.digital.max)
+		dgain = mode->ad_gain.digital.max;
+
+	ret = _nv_cam_set_gain_simple(tc_dev, &mode->ad_gain.analog, again);
+	if (ret)
+		return ret;
+
+	ret = _nv_cam_set_gain_simple(tc_dev, &mode->ad_gain.digital, dgain);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
 static int nv_cam_set_gain(struct tegracam_device *tc_dev, s64 val)
 {
-	return 0;
+	struct nv_cam *priv = tegracam_get_privdata(tc_dev);
+	struct camera_common_data *s_data = tc_dev->s_data;
+	struct nv_cam_mode *mode = &priv->modes[s_data->mode];
+
+	if (!strcmp(mode->gain_type, "simple"))
+		return nv_cam_set_gain_simple(tc_dev, val);
+	else if (!strcmp(mode->gain_type, "ad"))
+		return nv_cam_set_gain_ad(tc_dev, val);
+
+	return -EINVAL;
 }
 
 static int nv_cam_set_frame_rate(struct tegracam_device *tc_dev, s64 val)
@@ -622,6 +721,124 @@ static int nv_cam_parse_dt_cmd(struct nv_cam *priv, struct fwnode_handle *fwnode
 	return fwnode_property_read_u32_array(fwnode, name, cmd->data, cmd->len);
 }
 
+#define nv_cam_format_gain_prop(name, end, prefix) \
+	snprintf((name), sizeof(name), "nv,%s-" end, prefix);
+
+static int _nv_cam_parse_dt_mode_gain_simple(struct nv_cam *priv, struct fwnode_handle *fwnode,
+					     struct nv_cam_simple_gain *gain, const char *prefix,
+					     bool need_min_max)
+{
+	struct device *dev = &priv->i2c_client->dev;
+	unsigned int i;
+	char name[32];
+	int ret;
+
+	nv_cam_format_gain_prop(name, "min", prefix);
+	ret = fwnode_property_read_u32(fwnode, name, &gain->min);
+	if (ret && need_min_max) {
+		dev_err(dev, "Failed to read gain min: %d\n", ret);
+		return ret;
+	}
+
+	nv_cam_format_gain_prop(name, "max", prefix);
+	ret = fwnode_property_read_u32(fwnode, name, &gain->max);
+	if (ret && need_min_max) {
+		dev_err(dev, "Failed to read gain max: %d\n", ret);
+		return ret;
+	}
+
+	nv_cam_format_gain_prop(name, "regs", prefix);
+	ret = fwnode_property_count_u32(fwnode, name);
+	if (ret <= 0) {
+		dev_err(dev, "Failed to read gain max: %d\n", ret);
+		return -EINVAL;
+	}
+
+	gain->num_regs = ret;
+
+	ret = fwnode_property_read_u32_array(fwnode, name, gain->regs, gain->num_regs);
+	if (ret) {
+		dev_err(dev, "Failed to read gain regs: %d\n", ret);
+		return ret;
+	}
+
+	nv_cam_format_gain_prop(name, "muls", prefix);
+	ret = fwnode_property_read_u32_array(fwnode, name, gain->muls, gain->num_regs);
+	if (ret) {
+		dev_info(dev, "Gain muls missing, using default: %d\n", ret);
+
+		for (i = 0; i < gain->num_regs; i++)
+			gain->muls[i] = 1;
+	}
+
+	nv_cam_format_gain_prop(name, "divs", prefix);
+	ret = fwnode_property_read_u32_array(fwnode, name, gain->divs, gain->num_regs);
+	if (ret) {
+		dev_info(dev, "Gain divs missing, using default: %d\n", ret);
+
+		for (i = 0; i < gain->num_regs; i++)
+			gain->divs[i] = 1;
+	}
+
+	nv_cam_format_gain_prop(name, "source-masks", prefix);
+	ret = fwnode_property_read_u32_array(fwnode, name, gain->source_masks, gain->num_regs);
+	if (ret) {
+		dev_err(dev, "Failed to read gain source masks: %d\n", ret);
+		return ret;
+	}
+
+	nv_cam_format_gain_prop(name, "target-masks", prefix);
+	ret = fwnode_property_read_u32_array(fwnode, name, gain->target_masks, gain->num_regs);
+	if (ret) {
+		dev_err(dev, "Failed to read gain target masks: %d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+static int nv_cam_parse_dt_mode_gain_simple(struct nv_cam *priv, struct fwnode_handle *fwnode,
+					    struct nv_cam_mode *mode)
+{
+	return _nv_cam_parse_dt_mode_gain_simple(priv, fwnode, &mode->simple_gain, "gain", false);
+}
+
+static int nv_cam_parse_dt_mode_gain_ad(struct nv_cam *priv, struct fwnode_handle *fwnode,
+					struct nv_cam_mode *mode)
+{
+	int ret;
+
+	ret = _nv_cam_parse_dt_mode_gain_simple(priv, fwnode, &mode->ad_gain.analog, "again", true);
+	if (ret)
+		return ret;
+
+	ret = _nv_cam_parse_dt_mode_gain_simple(priv, fwnode, &mode->ad_gain.digital, "dgain", true);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
+static int nv_cam_parse_dt_mode_gain(struct nv_cam *priv, struct fwnode_handle *fwnode,
+				     struct nv_cam_mode *mode)
+{
+	const char *gain_type;
+	int ret;
+
+	ret = fwnode_property_read_string(fwnode, "nv,gain-type", &gain_type);
+	if (ret)
+		return 0;
+
+	mode->gain_type = gain_type;
+
+	if (!strcmp(gain_type, "simple"))
+		return nv_cam_parse_dt_mode_gain_simple(priv, fwnode, mode);
+	else if (!strcmp(gain_type, "ad"))
+		return nv_cam_parse_dt_mode_gain_ad(priv, fwnode, mode);
+
+	return -EINVAL;
+}
+
 static int nv_cam_parse_dt_mode(struct nv_cam *priv, struct fwnode_handle *fwnode,
 				struct nv_cam_mode *mode)
 {
@@ -630,8 +847,16 @@ static int nv_cam_parse_dt_mode(struct nv_cam *priv, struct fwnode_handle *fwnod
 
 	ret = nv_cam_parse_dt_cmd(priv, fwnode, &mode->mode_cmd,
 				  "nv,mode-cmd");
-	if (ret)
+	if (ret) {
 		dev_err(dev, "Failed to read mode cmd: %d\n", ret);
+		return ret;
+	}
+
+	ret = nv_cam_parse_dt_mode_gain(priv, fwnode, mode);
+	if (ret) {
+		dev_err(dev, "Failed to read mode gain: %d\n", ret);
+		return ret;
+	}
 
 	return 0;
 }
