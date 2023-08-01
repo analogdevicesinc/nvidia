@@ -10676,6 +10676,17 @@ S:	Maintained
 F:	Documentation/devicetree/bindings/iio/proximity/maxbotix,mb1232.yaml
 F:	drivers/iio/proximity/mb1232.c
 
+MAXIM GMSL2 SERIALIZERS AND DESERIALIZERS
+M:	Cosmin Tanislav <cosmin.tanislav@analog.com>
+L:	linux-media@vger.kernel.org
+S:	Maintained
+F:	Documentation/devicetree/bindings/media/i2c/maxim,max9296a.yaml
+F:	Documentation/devicetree/bindings/media/i2c/maxim,max96717-pinctrl.yaml
+F:	Documentation/devicetree/bindings/media/i2c/maxim,max96717.yaml
+F:	Documentation/devicetree/bindings/media/i2c/maxim,max96724.yaml
+F:	Documentation/devicetree/bindings/media/i2c/maxim-deserializer.yaml
+F:	Documentation/devicetree/bindings/media/i2c/maxim-serializer.yaml
+
 MAXIM MAX77650 PMIC MFD DRIVER
 M:	Bartosz Golaszewski <bgolaszewski@baylibre.com>
 L:	linux-kernel@vger.kernel.org
