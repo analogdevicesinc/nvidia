@@ -71,6 +71,7 @@ struct nv_cam {
 	u32				chip_id_regs[MAX_CHIP_ID_REGS];
 	u32				chip_id_masks[MAX_CHIP_ID_REGS];
 	u32				chip_id_vals[MAX_CHIP_ID_REGS];
+	u32				pwdn_sleep_us;
 
 	u32				wait_ms_cmd;
 	struct nv_cam_cmd		mode_common_cmd;
@@ -267,6 +268,7 @@ static struct tegracam_ctrl_ops nv_cam_ctrl_ops = {
 
 static int nv_cam_power_on(struct camera_common_data *s_data)
 {
+	struct nv_cam *priv = (struct nv_cam *)s_data->priv;
 	struct camera_common_power_rail *pw = s_data->power;
 	struct camera_common_pdata *pdata = s_data->pdata;
 	struct device *dev = s_data->dev;
@@ -286,6 +288,8 @@ static int nv_cam_power_on(struct camera_common_data *s_data)
 			gpio_set_value_cansleep(pw->pwdn_gpio, 1);
 		else
 			gpio_set_value(pw->pwdn_gpio, 1);
+		if (priv->pwdn_sleep_us)
+			fsleep(priv->pwdn_sleep_us);
 	}
 
 	if (!pw->avdd && !pw->iovdd && !pw->dvdd)
@@ -348,6 +352,7 @@ nv_cam_avdd_fail:
 
 static int nv_cam_power_off(struct camera_common_data *s_data)
 {
+	struct nv_cam *priv = (struct nv_cam *)s_data->priv;
 	struct camera_common_power_rail *pw = s_data->power;
 	struct camera_common_pdata *pdata = s_data->pdata;
 	struct device *dev = s_data->dev;
@@ -372,6 +377,8 @@ static int nv_cam_power_off(struct camera_common_data *s_data)
 				gpio_set_value_cansleep(pw->pwdn_gpio, 0);
 			else
 				gpio_set_value(pw->pwdn_gpio, 0);
+			if (priv->pwdn_sleep_us)
+				fsleep(priv->pwdn_sleep_us);
 		}
 
 		usleep_range(10, 20);
@@ -1047,6 +1054,12 @@ static int nv_cam_parse_dt_extra(struct nv_cam *priv)
 	if (ret)
 		dev_info(dev, "Failed to read value bits, using default: %d\n", ret);
 	priv->val_bits = val;
+
+	val = 0;
+	ret = device_property_read_u32(dev, "nv,pwdn-sleep-us", &val);
+	if (ret)
+		dev_info(dev, "Failed to read pwdn sleep us, using default: %d\n", ret);
+	priv->pwdn_sleep_us = val;
 
 	ret = nv_cam_parse_dt_cmds(priv);
 	if (ret)
