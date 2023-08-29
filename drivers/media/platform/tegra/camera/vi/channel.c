@@ -1710,10 +1710,8 @@ static void tegra_channel_free_sensor_properties(
 static int tegra_channel_connect_sensor(
 	struct tegra_channel *chan, struct v4l2_subdev *sensor_sd)
 {
-	struct device *sensor_dev;
-	struct device_node *sensor_of_node;
-	struct tegra_csi_device *csi_device;
-	struct device_node *ep_node;
+	struct tegra_csi_channel *csi_chan;
+	struct v4l2_subdev *csi_chan_sd;
 
 	if (!chan)
 		return -EINVAL;
@@ -1721,38 +1719,13 @@ static int tegra_channel_connect_sensor(
 	if (!sensor_sd)
 		return -EINVAL;
 
-	sensor_dev = sensor_sd->dev;
-	if (!sensor_dev)
-		return -EINVAL;
+	csi_chan_sd = tegra_channel_find_linked_csi_subdev(chan);
+	if (!csi_chan_sd)
+		return 0;
 
-	sensor_of_node = sensor_dev->of_node;
-	if (!sensor_of_node)
-		return -EINVAL;
-
-	csi_device = tegra_get_mc_csi();
-	WARN_ON(!csi_device);
-	if (!csi_device)
-		return -ENODEV;
-
-	for_each_endpoint_of_node(sensor_of_node, ep_node) {
-		struct device_node *csi_chan_of_node;
-		struct tegra_csi_channel *csi_chan;
-
-		csi_chan_of_node =
-			of_graph_get_remote_port_parent(ep_node);
-
-		list_for_each_entry(csi_chan, &csi_device->csi_chans, list) {
-			if (csi_chan->of_node == csi_chan_of_node) {
-				csi_chan->s_data =
-					to_camera_common_data(chan->subdev_on_csi->dev);
-				csi_chan->sensor_sd = chan->subdev_on_csi;
-				break;
-			}
-		}
-
-		of_node_put(csi_chan_of_node);
-
-	}
+	csi_chan = to_csi_chan(csi_chan_sd);
+	csi_chan->s_data = to_camera_common_data(chan->subdev_on_csi->dev);
+	csi_chan->sensor_sd = chan->subdev_on_csi;
 
 	return 0;
 }
