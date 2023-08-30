@@ -16,8 +16,11 @@
 #include "tegra234-p3768-0000-a0-pcie.dtsi"
 #include "tegra234-p3768-0000-a0-fixed-regulator.dtsi"
 #include "tegra234-p3768-audio.dtsi"
+
+#if 0
 #include "tegra234-p3768-camera-rbpcv3-imx477.dtsi"
 #include "tegra234-p3768-camera-rbpcv2-imx219.dtsi"
+#endif
 
 / {
 	gpio-keys {
@@ -261,6 +264,7 @@
 		status = "okay";
 	};
 
+#if 0
 	tegra-capture-vi  {
 		ports {
 			port@0 {
@@ -336,4 +340,5 @@
 			};
 		};
 	};
+#endif
 };
