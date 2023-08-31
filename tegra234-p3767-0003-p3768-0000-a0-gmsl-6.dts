@@ -1,0 +1,225 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2023 Analog Devices Inc.
+ */
+
+/dts-v1/;
+
+#define GMSL
+
+#define GMSL_TEGRA_PORT                 1
+
+#define GMSL_DES_PHY                    1
+#define GMSL_DES_PHY_NUM_LANES          2
+#define GMSL_DES_LANE_RATE              2500000000
+#define GMSL_DES_PHY_1_2_LANE_MODE_IN_4_LANES
+
+#define GMSL_CAMERA_NUM			4
+#define GMSL_DES_MAX96724
+#define GMSL_SER_0_MAX96717
+#define GMSL_SER_1_MAX96717
+#define GMSL_SER_2_MAX96717
+#define GMSL_SER_3_MAX96717
+#define GMSL_CAM_0_TEGRA_IMX219
+#define GMSL_CAM_1_TEGRA_IMX219
+#define GMSL_CAM_2_TEGRA_IMX219
+#define GMSL_CAM_3_TEGRA_IMX219
+
+#include "tegra234-p3767-0003-p3768-0000-a0-gmsl.dtsi"
+
+/* Undefined after including GMSL dts. */
+#define GMSL_DES_PHY                    1
+
+&ser_0 {
+        pipe@0 {
+                maxim,dbl8;
+                maxim,soft-bpp = <10>;
+                maxim,bpp = <16>;
+        };
+
+        channel@1 {
+                reg = <1>;
+
+                maxim,embedded-data;
+
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@0 {
+                                reg = <0>;
+
+                                ser_out_0_emb: endpoint {
+                                        remote-endpoint = <&des_in_0_emb>;
+                                };
+                        };
+                };
+        };
+};
+
+&ser_1 {
+        pipe@0 {
+                maxim,dbl8;
+                maxim,soft-bpp = <10>;
+                maxim,bpp = <16>;
+        };
+
+        channel@1 {
+                reg = <1>;
+
+                maxim,embedded-data;
+
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@0 {
+                                reg = <0>;
+
+                                ser_out_1_emb: endpoint {
+                                        remote-endpoint = <&des_in_1_emb>;
+                                };
+                        };
+                };
+        };
+};
+
+&ser_2 {
+        pipe@0 {
+                maxim,dbl8;
+                maxim,soft-bpp = <10>;
+                maxim,bpp = <16>;
+        };
+
+        channel@1 {
+                reg = <1>;
+
+                maxim,embedded-data;
+
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@0 {
+                                reg = <0>;
+
+                                ser_out_2_emb: endpoint {
+                                        remote-endpoint = <&des_in_2_emb>;
+                                };
+                        };
+                };
+        };
+};
+
+&ser_3 {
+        pipe@0 {
+                maxim,dbl8;
+                maxim,soft-bpp = <10>;
+                maxim,bpp = <16>;
+        };
+
+        channel@1 {
+                reg = <1>;
+
+                maxim,embedded-data;
+
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@0 {
+                                reg = <0>;
+
+                                ser_out_3_emb: endpoint {
+                                        remote-endpoint = <&des_in_3_emb>;
+                                };
+                        };
+                };
+        };
+};
+
+&des {
+        phy@GMSL_DES_PHY {
+                maxim,alt2-mem-map8;
+        };
+
+        channel@4 {
+                reg = <4>;
+
+                maxim,phy-id = <GMSL_DES_PHY>;
+                maxim,embedded-data;
+
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@1 {
+                                reg = <1>;
+
+                                des_in_0_emb: endpoint {
+                                        remote-endpoint = <&ser_out_0_emb>;
+                                };
+                        };
+                };
+        };
+
+        channel@5 {
+                reg = <5>;
+
+                maxim,phy-id = <GMSL_DES_PHY>;
+                maxim,embedded-data;
+
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@1 {
+                                reg = <1>;
+
+                                des_in_1_emb: endpoint {
+                                        remote-endpoint = <&ser_out_1_emb>;
+                                };
+                        };
+                };
+        };
+
+        channel@6 {
+                reg = <6>;
+
+                maxim,phy-id = <GMSL_DES_PHY>;
+                maxim,embedded-data;
+
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@1 {
+                                reg = <1>;
+
+                                des_in_2_emb: endpoint {
+                                        remote-endpoint = <&ser_out_2_emb>;
+                                };
+                        };
+                };
+        };
+
+        channel@7 {
+                reg = <7>;
+
+                maxim,phy-id = <GMSL_DES_PHY>;
+                maxim,embedded-data;
+
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@1 {
+                                reg = <1>;
+
+                                des_in_3_emb: endpoint {
+                                        remote-endpoint = <&ser_out_3_emb>;
+                                };
+                        };
+                };
+        };
+};

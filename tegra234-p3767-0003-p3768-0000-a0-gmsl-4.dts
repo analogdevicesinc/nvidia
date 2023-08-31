@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2023 Analog Devices Inc.
+ */
+
+/dts-v1/;
+
+#define GMSL
+
+#define GMSL_TEGRA_PORT			2
+
+#define GMSL_DES_PHY			1
+#define GMSL_DES_PHY_NUM_LANES		4
+#define GMSL_DES_PHY_ALT_MEM_MAP12
+
+#define GMSL_CAMERA_NUM			4
+#define GMSL_DES_MAX96724
+#define GMSL_SER_0_MAX9295A
+#define GMSL_SER_1_MAX9295A
+#define GMSL_SER_2_MAX96717
+#define GMSL_SER_3_MAX96717
+#define GMSL_CAM_0_TEGRA_OX03A
+#define GMSL_CAM_1_TEGRA_OX03A
+#define GMSL_CAM_2_TEGRA_OX03A
+#define GMSL_CAM_3_TEGRA_OX03A
+
+#include "tegra234-p3767-0003-p3768-0000-a0-gmsl.dtsi"

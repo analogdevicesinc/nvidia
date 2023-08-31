@@ -1,0 +1,53 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2023 Analog Devices Inc.
+ */
+
+/dts-v1/;
+
+#include "tegra234-p3767-0003-p3768-0000-a0.dts"
+
+#define CAM_I2C_MUX 	TEGRA234_AON_GPIO(CC, 3)
+
+/ {
+	cam_i2cmux {
+		compatible = "i2c-mux-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		mux-gpios = <&tegra_aon_gpio CAM_I2C_MUX GPIO_ACTIVE_HIGH>;
+		i2c-parent = <&cam_i2c>;
+
+		cam_i2c_0: i2c@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		cam_i2c_1: i2c@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+};
+
+#define GMSL
+#define GMSL_TEGRA_PLATFORM
+
+#if GMSL_TEGRA_PORT == 0 || GMSL_TEGRA_PORT == 1
+#define GMSL_DES_I2C_LABEL cam_i2c_0
+#elif GMSL_TEGRA_PORT == 2 || GMSL_TEGRA_PORT == 3
+#define GMSL_DES_I2C_LABEL cam_i2c_1
+#else
+#error
+#endif
+
+#if GMSL_TEGRA_PORT == 1
+#define GMSL_TEGRA_LANE_POLARITY_SWAP
+#endif
+
+&GMSL_DES_I2C_LABEL {
+	clock-frequency = <100000>;
+};
+
+#include "../../../../../../kernel/kernel-5.10/arch/arm64/boot/dts/gmsl/gmsl.dtsi"
