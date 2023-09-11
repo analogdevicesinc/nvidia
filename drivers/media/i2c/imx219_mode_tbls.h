@@ -67,6 +67,7 @@ static imx219_reg imx219_mode_common[] = {
 	{IMX219_TABLE_END, 0x00}
 };
 
+#if 0
 static imx219_reg imx219_mode_3280x2464_21fps[] = {
 	/* capture settings */
 	{0x0157, 0x00}, /* ANALOG_GAIN_GLOBAL[7:0] */
@@ -150,6 +151,7 @@ static imx219_reg imx219_mode_3280x1848_28fps[] = {
     {0x030D, 0x72},
 	{IMX219_TABLE_END, 0x00}
 };
+#endif
 
 static imx219_reg imx219_mode_1920x1080_30fps[] = {
 	/* capture settings */
@@ -193,6 +195,7 @@ static imx219_reg imx219_mode_1920x1080_30fps[] = {
 	{IMX219_TABLE_END, 0x00}
 };
 
+#if 0
 static imx219_reg imx219_mode_1640x1232_30fps[] = {
 	/* capture settings */
 	{0x0157, 0x00}, /* ANALOG_GAIN_GLOBAL[7:0] */
@@ -320,12 +323,18 @@ static imx219_reg imx219_mode_1280x720_120fps[] = {
 	{IMX219_TABLE_END, 0x00}
 };
 */
+#endif
+
 enum {
+#if 0
 	IMX219_MODE_3280x2464_21FPS,
 	IMX219_MODE_3280x1848_28FPS,
+#endif
 	IMX219_MODE_1920x1080_30FPS,
+#if 0
 	IMX219_MODE_1640x1232_30FPS,
 	IMX219_MODE_1280x720_60FPS,
+#endif
 
 	IMX219_MODE_COMMON,
 	IMX219_START_STREAM,
@@ -333,17 +342,22 @@ enum {
 };
 
 static imx219_reg *mode_table[] = {
+#if 0
 	[IMX219_MODE_3280x2464_21FPS] = imx219_mode_3280x2464_21fps,
 	[IMX219_MODE_3280x1848_28FPS] = imx219_mode_3280x1848_28fps,
+#endif
 	[IMX219_MODE_1920x1080_30FPS] = imx219_mode_1920x1080_30fps,
+#if 0
 	[IMX219_MODE_1640x1232_30FPS] = imx219_mode_1640x1232_30fps,
 	[IMX219_MODE_1280x720_60FPS] = imx219_mode_1280x720_60fps,
+#endif
 
 	[IMX219_MODE_COMMON]  = imx219_mode_common,
 	[IMX219_START_STREAM]  = imx219_start_stream,
 	[IMX219_STOP_STREAM]  = imx219_stop_stream,
 };
 
+#if 0
 static const int imx219_21fps[] = {
 	21,
 };
@@ -351,26 +365,33 @@ static const int imx219_21fps[] = {
 static const int imx219_28fps[] = {
 	28,
 };
+#endif
 
 static const int imx219_30fps[] = {
 	30,
 };
 
+#if 0
 static const int imx219_60fps[] = {
 	60,
 };
+#endif
 
 /*
  * WARNING: frmfmt ordering need to match mode definition in
  * device tree!
  */
 static const struct camera_common_frmfmt imx219_frmfmt[] = {
+#if 0
 	{{3280, 2464},	imx219_21fps, 1, 0, IMX219_MODE_3280x2464_21FPS},
 	/* Add modes with no device tree support after below */
 	{{3280, 1848},	imx219_28fps, 1, 0, IMX219_MODE_3280x1848_28FPS},
+#endif
 	{{1920, 1080},	imx219_30fps, 1, 0, IMX219_MODE_1920x1080_30FPS},
+#if 0
 	{{1640, 1232},	imx219_30fps, 1, 0, IMX219_MODE_1640x1232_30FPS},
 	{{1280, 720},	imx219_60fps, 1, 0, IMX219_MODE_1280x720_60FPS},
+#endif
 };
 
 #endif /* __IMX219_I2C_TABLES__ */
