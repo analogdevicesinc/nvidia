@@ -200,6 +200,7 @@ int tegracam_v4l2subdev_register(struct tegracam_device *tc_dev,
 	struct tegracam_ctrl_handler *ctrl_hdl;
 	struct v4l2_subdev *sd = NULL;
 	struct device *dev = tc_dev->dev;
+	const char *label;
 	int err = 0;
 
 	if (!s_data)
@@ -215,6 +216,10 @@ int tegracam_v4l2subdev_register(struct tegracam_device *tc_dev,
 	}
 
 	v4l2_i2c_subdev_init(sd, tc_dev->client, &v4l2sd_ops);
+
+	err = device_property_read_string(dev, "label", &label);
+	if (!err)
+		strncpy(sd->name, label, sizeof(sd->name));
 
 	ctrl_hdl->ctrl_ops = tc_dev->tcctrl_ops;
 	err = tegracam_ctrl_handler_init(ctrl_hdl);
