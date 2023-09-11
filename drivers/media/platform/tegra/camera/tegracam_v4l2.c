@@ -216,9 +216,6 @@ int tegracam_v4l2subdev_register(struct tegracam_device *tc_dev,
 
 	v4l2_i2c_subdev_init(sd, tc_dev->client, &v4l2sd_ops);
 
-	if (strlen(tc_dev->sd_name))
-		strncpy(sd->name, tc_dev->sd_name, sizeof(sd->name));
-
 	ctrl_hdl->ctrl_ops = tc_dev->tcctrl_ops;
 	err = tegracam_ctrl_handler_init(ctrl_hdl);
 	if (err) {
