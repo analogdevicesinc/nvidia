@@ -1079,7 +1079,6 @@ static int nv_cam_probe(struct i2c_client *client,
 	struct device *dev = &client->dev;
 	struct tegracam_device *tc_dev;
 	struct nv_cam *priv;
-	const char *label;
 	int ret;
 
 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
@@ -1105,10 +1104,6 @@ static int nv_cam_probe(struct i2c_client *client,
 	tc_dev->dev_regmap_config = &regmap_config;
 	tc_dev->sensor_ops = &nv_cam_common_ops;
 	tc_dev->tcctrl_ops = &nv_cam_ctrl_ops;
-
-	ret = device_property_read_string(dev, "label", &label);
-	if (!ret)
-		strncpy(tc_dev->sd_name, label, sizeof(tc_dev->sd_name));
 
 	ret = tegracam_device_register(tc_dev);
 	if (ret) {
