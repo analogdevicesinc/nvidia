@@ -123,9 +123,15 @@ static int sensor_common_parse_signal_props(
 	else
 		signal->serdes_pixel_clock.val = val64;
 
-	err = read_property_u64(node, "serdes_lane_rate", &val64);
-	if (!err && signal->serdes_pixel_clock.val == 0ULL)
+	err = read_property_u64(node, "serdes_link_freq", &val64);
+	if (!err && signal->serdes_pixel_clock.val == 0ULL) {
+		if (signal->phy_mode == CSI_PHY_MODE_DPHY)
+			val64 = val64 * 2;
+		else if (signal->phy_mode == CSI_PHY_MODE_CPHY)
+			val64 = val64 * 16 / 7;
+
 		signal->serdes_pixel_clock.val = val64 * signal->num_lanes / depth;
+	}
 
 	if (signal->serdes_pixel_clock.val != 0ULL) {
 		if (signal->serdes_pixel_clock.val < signal->pixel_clock.val) {
