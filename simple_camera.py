@@ -6,12 +6,13 @@
 # Drivers for the camera and OpenCV are included in the base image
 
 import cv2
+import sys
 
 """ 
 gstreamer_pipeline returns a GStreamer pipeline for capturing from the CSI camera
 Flip the image by setting the flip_method (most common values: 0 and 2)
 display_width and display_height determine the size of each camera pane in the window on the screen
-Default 1920x1080 displayd in a 1/4 size window
+Default 1920x1080 displayed in a 1/4 size window
 """
 
 def gstreamer_pipeline(
@@ -42,12 +43,13 @@ def gstreamer_pipeline(
     )
 
 
-def show_camera():
-    window_title = "CSI Camera"
+def show_camera(sensor_id):
+    window_title = "CSI Camera {}".format(sensor_id)
 
     # To flip the image, modify the flip_method parameter (0 and 2 are the most common)
-    print(gstreamer_pipeline(flip_method=0))
-    video_capture = cv2.VideoCapture(gstreamer_pipeline(flip_method=0), cv2.CAP_GSTREAMER)
+    s = gstreamer_pipeline(sensor_id=sensor_id, flip_method=0)
+    print(s)
+    video_capture = cv2.VideoCapture(s, cv2.CAP_GSTREAMER)
     if video_capture.isOpened():
         try:
             window_handle = cv2.namedWindow(window_title, cv2.WINDOW_AUTOSIZE)
@@ -72,4 +74,9 @@ def show_camera():
 
 
 if __name__ == "__main__":
-    show_camera()
+    camera = 0
+
+    if len(sys.argv) >= 2:
+        camera = int(sys.argv[1])
+
+    show_camera(camera)
