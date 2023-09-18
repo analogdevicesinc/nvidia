@@ -40,6 +40,8 @@
         channel@1 {
                 reg = <1>;
 
+                label = "ser_0_ch_1";
+
                 maxim,embedded-data;
 
                 ports {
@@ -68,6 +70,8 @@
                 reg = <1>;
 
                 maxim,embedded-data;
+
+                label = "ser_1_ch_1";
 
                 ports {
                         #address-cells = <1>;
