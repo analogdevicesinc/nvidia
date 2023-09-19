@@ -473,7 +473,7 @@ First, install the necessary dependencies.
 
 `sudo apt install build-essential libgtk-3-dev`
 
-Make sure that you have included the CUDA Toolkit when flashing the board, and that the [`nvargus-daemon`][nvargus-daemon] is turned on.
+Make sure that you have included the CUDA Toolkit when flashing the board, and that the [`nvargus-daemon`](#nvargus-daemon) is turned on.
 
 Then, clone and build the project using the following commands.
 
