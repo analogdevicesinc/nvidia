@@ -25,6 +25,7 @@ Further instructions can be found in the [Main documentation](https://github.com
 | Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 2xMAX9295A + 2xMAX96717 + 4xOX03A on CAM1 at 4 lanes][cfg-4] 	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-4.dtb][dts-4] 	|
 | Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 4xMAX96717 + 4xOX03A on CAM1 at 4 lanes][cfg-5]              	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-5.dtb][dts-5] 	|
 | Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 4xMAX96717 + 4xIMX219 on CAM0 at 2 lanes][cfg-6]             	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-6.dtb][dts-6] 	|
+| Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 4xMAX96717 + 4xIMX219 on CAM1 at 4 lanes][cfg-7]             	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-7.dtb][dts-7] 	|
 
 [cfg-0]: #max96724--2xmax9295a--2xmax96717--4xox03a-on-cam0-at-2-lanes
 [cfg-1]: #max96724--4xmax96717--4xox03a-on-cam0-at-2-lanes
@@ -33,6 +34,7 @@ Further instructions can be found in the [Main documentation](https://github.com
 [cfg-4]: #max96724--2xmax9295a--2xmax96717--4xox03a-on-cam1-at-4-lanes
 [cfg-5]: #max96724--4xmax96717--4xox03a-on-cam1-at-4-lanes
 [cfg-6]: #max96724--4xmax96717--4ximx219-on-cam0-at-2-lanes
+[cfg-7]: #max96724--4xmax96717--4ximx219-on-cam1-at-4-lanes
 
 [dts-0]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-0.dts
 [dts-1]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-1.dts
@@ -41,6 +43,7 @@ Further instructions can be found in the [Main documentation](https://github.com
 [dts-4]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-4.dts
 [dts-5]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-5.dts
 [dts-6]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-6.dts
+[dts-7]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-7.dts
 
 ## Source code
 
@@ -96,23 +99,27 @@ Further instructions can be found in the [Main documentation](https://github.com
 
 ### MAX96724 + 2xMAX9295A + 2xMAX96717 + 4xOX03A on CAM1 at 2 lanes
 
-[Software configuration](#sw-cfg-1).
+[Software configuration](#sw-cfg-0).
 
 ### MAX96724 + 4xMAX96717 + 4xOX03A on CAM1 at 2 lanes
 
-[Software configuration](#sw-cfg-1).
+[Software configuration](#sw-cfg-0).
 
 ### MAX96724 + 2xMAX9295A + 2xMAX96717 + 4xOX03A on CAM1 at 4 lanes
 
-[Software configuration](#sw-cfg-1).
+[Software configuration](#sw-cfg-0).
 
 ### MAX96724 + 4xMAX96717 + 4xOX03A on CAM1 at 4 lanes
 
-[Software configuration](#sw-cfg-1).
+[Software configuration](#sw-cfg-0).
 
 ### MAX96724 + 4xMAX96717 + 4xIMX219 on CAM0 at 2 lanes
 
-[Software configuration](#sw-cfg-2).
+[Software configuration](#sw-cfg-1).
+
+### MAX96724 + 4xMAX96717 + 4xIMX219 on CAM1 at 4 lanes
+
+[Software configuration](#sw-cfg-1).
 
 ## Hardware configuration
 
@@ -188,153 +195,153 @@ Device topology
             type V4L2 subdev subtype Unknown flags 0
             device node name /dev/v4l-subdev0
 	pad0: Sink
-		<- "max96724:0 2-0027":0 [ENABLED]
+		<- "des_ch_0":0 [ENABLED]
 	pad1: Source
-		-> "vi-output, camera0":0 [ENABLED]
+		-> "vi-output, cam_0":0 [ENABLED]
 
 - entity 4: nvcsi1 (2 pads, 2 links)
             type V4L2 subdev subtype Unknown flags 0
             device node name /dev/v4l-subdev1
 	pad0: Sink
-		<- "max96724:1 2-0027":0 [ENABLED]
+		<- "des_ch_1":0 [ENABLED]
 	pad1: Source
-		-> "vi-output, camera1":0 [ENABLED]
+		-> "vi-output, cam_1":0 [ENABLED]
 
 - entity 7: nvcsi2 (2 pads, 2 links)
             type V4L2 subdev subtype Unknown flags 0
             device node name /dev/v4l-subdev2
 	pad0: Sink
-		<- "max96724:2 2-0027":0 [ENABLED]
+		<- "des_ch_2":0 [ENABLED]
 	pad1: Source
-		-> "vi-output, camera2":0 [ENABLED]
+		-> "vi-output, cam_2":0 [ENABLED]
 
 - entity 10: nvcsi3 (2 pads, 2 links)
              type V4L2 subdev subtype Unknown flags 0
              device node name /dev/v4l-subdev3
 	pad0: Sink
-		<- "max96724:3 2-0027":0 [ENABLED]
+		<- "des_ch_3":0 [ENABLED]
 	pad1: Source
-		-> "vi-output, camera3":0 [ENABLED]
+		-> "vi-output, cam_3":0 [ENABLED]
 
-- entity 13: camera0 (1 pad, 1 link)
+- entity 13: cam_0 (1 pad, 1 link)
              type V4L2 subdev subtype Sensor flags 0
              device node name /dev/v4l-subdev4
 	pad0: Source
 		[fmt:SBGGR12_1X12/1920x1280 field:none colorspace:srgb]
-		-> "max96717:0 9-0040":1 [ENABLED]
+		-> "ser_0_ch_0":1 [ENABLED]
 
-- entity 15: max96717:0 9-0040 (2 pads, 2 links)
+- entity 15: ser_0_ch_0 (2 pads, 2 links)
              type V4L2 subdev subtype Unknown flags 0
              device node name /dev/v4l-subdev5
 	pad0: Source
 		[fmt:SBGGR12_1X12/0x0]
-		-> "max96724:0 2-0027":1 [ENABLED]
+		-> "des_ch_0":1 [ENABLED]
 	pad1: Sink
-		<- "camera0":0 [ENABLED]
+		<- "cam_0":0 [ENABLED]
 
-- entity 18: camera1 (1 pad, 1 link)
+- entity 18: cam_1 (1 pad, 1 link)
              type V4L2 subdev subtype Sensor flags 0
              device node name /dev/v4l-subdev6
 	pad0: Source
 		[fmt:SBGGR12_1X12/1920x1280 field:none colorspace:srgb]
-		-> "max96717:0 11-0040":1 [ENABLED]
+		-> "ser_1_ch_0":1 [ENABLED]
 
-- entity 20: max96717:0 11-0040 (2 pads, 2 links)
+- entity 20: ser_1_ch_0 (2 pads, 2 links)
              type V4L2 subdev subtype Unknown flags 0
              device node name /dev/v4l-subdev7
 	pad0: Source
 		[fmt:SBGGR12_1X12/0x0]
-		-> "max96724:1 2-0027":1 [ENABLED]
+		-> "des_ch_1":1 [ENABLED]
 	pad1: Sink
-		<- "camera1":0 [ENABLED]
+		<- "cam_1":0 [ENABLED]
 
-- entity 23: camera2 (1 pad, 1 link)
+- entity 23: cam_2 (1 pad, 1 link)
              type V4L2 subdev subtype Sensor flags 0
              device node name /dev/v4l-subdev8
 	pad0: Source
 		[fmt:SBGGR12_1X12/1920x1280 field:none colorspace:srgb]
-		-> "max96717:0 13-0040":1 [ENABLED]
+		-> "ser_2_ch_0":1 [ENABLED]
 
-- entity 25: max96717:0 13-0040 (2 pads, 2 links)
+- entity 25: ser_2_ch_0 (2 pads, 2 links)
              type V4L2 subdev subtype Unknown flags 0
              device node name /dev/v4l-subdev9
 	pad0: Source
 		[fmt:SBGGR12_1X12/0x0]
-		-> "max96724:2 2-0027":1 [ENABLED]
+		-> "des_ch_2":1 [ENABLED]
 	pad1: Sink
-		<- "camera2":0 [ENABLED]
+		<- "cam_2":0 [ENABLED]
 
-- entity 28: camera3 (1 pad, 1 link)
+- entity 28: cam_3 (1 pad, 1 link)
              type V4L2 subdev subtype Sensor flags 0
              device node name /dev/v4l-subdev10
 	pad0: Source
 		[fmt:SBGGR12_1X12/1920x1280 field:none colorspace:srgb]
-		-> "max96717:0 15-0040":1 [ENABLED]
+		-> "ser_3_ch_0":1 [ENABLED]
 
-- entity 30: max96717:0 15-0040 (2 pads, 2 links)
+- entity 30: ser_3_ch_0 (2 pads, 2 links)
              type V4L2 subdev subtype Unknown flags 0
              device node name /dev/v4l-subdev11
 	pad0: Source
 		[fmt:SBGGR12_1X12/0x0]
-		-> "max96724:3 2-0027":1 [ENABLED]
+		-> "des_ch_3":1 [ENABLED]
 	pad1: Sink
-		<- "camera3":0 [ENABLED]
+		<- "cam_3":0 [ENABLED]
 
-- entity 33: max96724:0 2-0027 (2 pads, 2 links)
+- entity 33: des_ch_0 (2 pads, 2 links)
              type V4L2 subdev subtype Unknown flags 0
              device node name /dev/v4l-subdev12
 	pad0: Source
 		[fmt:SBGGR12_1X12/0x0]
 		-> "nvcsi0":0 [ENABLED]
 	pad1: Sink
-		<- "max96717:0 9-0040":0 [ENABLED]
+		<- "ser_0_ch_0":0 [ENABLED]
 
-- entity 36: vi-output, camera0 (1 pad, 1 link)
+- entity 36: vi-output, cam_0 (1 pad, 1 link)
              type Node subtype V4L flags 0
              device node name /dev/video0
 	pad0: Sink
 		<- "nvcsi0":1 [ENABLED]
 
-- entity 74: max96724:1 2-0027 (2 pads, 2 links)
+- entity 74: des_ch_1 (2 pads, 2 links)
              type V4L2 subdev subtype Unknown flags 0
              device node name /dev/v4l-subdev13
 	pad0: Source
 		[fmt:SBGGR12_1X12/0x0]
 		-> "nvcsi1":0 [ENABLED]
 	pad1: Sink
-		<- "max96717:0 11-0040":0 [ENABLED]
+		<- "ser_1_ch_0":0 [ENABLED]
 
-- entity 77: vi-output, camera1 (1 pad, 1 link)
+- entity 77: vi-output, cam_1 (1 pad, 1 link)
              type Node subtype V4L flags 0
              device node name /dev/video1
 	pad0: Sink
 		<- "nvcsi1":1 [ENABLED]
 
-- entity 91: max96724:2 2-0027 (2 pads, 2 links)
+- entity 91: des_ch_2 (2 pads, 2 links)
              type V4L2 subdev subtype Unknown flags 0
              device node name /dev/v4l-subdev14
 	pad0: Source
 		[fmt:SBGGR12_1X12/0x0]
 		-> "nvcsi2":0 [ENABLED]
 	pad1: Sink
-		<- "max96717:0 13-0040":0 [ENABLED]
+		<- "ser_2_ch_0":0 [ENABLED]
 
-- entity 94: vi-output, camera2 (1 pad, 1 link)
+- entity 94: vi-output, cam_2 (1 pad, 1 link)
              type Node subtype V4L flags 0
              device node name /dev/video2
 	pad0: Sink
 		<- "nvcsi2":1 [ENABLED]
 
-- entity 108: max96724:3 2-0027 (2 pads, 2 links)
+- entity 108: des_ch_3 (2 pads, 2 links)
               type V4L2 subdev subtype Unknown flags 0
               device node name /dev/v4l-subdev15
 	pad0: Source
 		[fmt:SBGGR12_1X12/0x0]
 		-> "nvcsi3":0 [ENABLED]
 	pad1: Sink
-		<- "max96717:0 15-0040":0 [ENABLED]
+		<- "ser_3_ch_0":0 [ENABLED]
 
-- entity 111: vi-output, camera3 (1 pad, 1 link)
+- entity 111: vi-output, cam_3 (1 pad, 1 link)
               type Node subtype V4L flags 0
               device node name /dev/video3
 	pad0: Sink
@@ -396,41 +403,30 @@ The format needs to match the format of the connected camera's active mode, whic
 
 Although the resolution is not currently used, it is a necessary parameter.
 
-#### Software configuration for MAX96724 + 4xMAX9295A/MAX96717 + 4xOX03A on CAM0 <a id="sw-cfg-0"></a>
+#### Software configuration for MAX96724 + 4xMAX9295A/MAX96717 + 4xOX03A <a id="sw-cfg-0"></a>
 
 ```
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 10-0040":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 12-0040":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 14-0040":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 16-0040":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96724:0 9-0027":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96724:1 9-0027":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96724:2 9-0027":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96724:3 9-0027":0[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_0_ch_0":0[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_1_ch_0":0[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_2_ch_0":0[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_3_ch_0":0[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"des_ch_0":0[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"des_ch_1":0[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"des_ch_2":0[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"des_ch_3":0[fmt:SBGGR12_1X12/1920x1280]'
 ```
 
-#### Software configuration for MAX96724 + 4xMAX9295A/MAX96717 + 4xOX03A on CAM1 <a id="sw-cfg-1"></a>
+#### Software configuration for MAX96724 + 4xMAX9295A/MAX96717 + 4xIMX219 <a id="sw-cfg-1"></a>
 
 ```
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 11-0040":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 13-0040":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 15-0040":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 17-0040":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96724:0 10-0027":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96724:1 10-0027":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96724:2 10-0027":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96724:3 10-0027":0[fmt:SBGGR12_1X12/1920x1280]'
-```
-
-#### Software configuration for MAX96724 + 4xMAX9295A/MAX96717 + 4xIMX219 on CAM0 <a id="sw-cfg-2"></a>
-
-```
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 10-0040":0[fmt:SRGGB10_1X10/1920x1080]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 12-0040":0[fmt:SRGGB10_1X10/1920x1080]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 14-0040":0[fmt:SRGGB10_1X10/1920x1080]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96717:0 16-0040":0[fmt:SRGGB10_1X10/1920x1080]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96724:0 9-0027":0[fmt:SRGGB10_1X10/1920x1080]'
-media-ctl -d /dev/media0 --set-v4l2 '"max96724:1 9-0027":0[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_0_ch_0":0[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_1_ch_0":0[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_2_ch_0":0[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_3_ch_0":0[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"des_ch_1":0[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"des_ch_2":0[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"des_ch_3":0[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"des_ch_4":0[fmt:SRGGB10_1X10/1920x1080]'
 ```
 
 ### nvargus-daemon
