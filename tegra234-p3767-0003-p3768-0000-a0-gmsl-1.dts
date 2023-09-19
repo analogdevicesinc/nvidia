@@ -11,8 +11,8 @@
 
 #define GMSL_DES_PHY			1
 #define GMSL_DES_PHY_NUM_LANES		2
+#define GMSL_DES_LANE_RATE		2500000000
 #define GMSL_DES_PHY_1_2_LANE_MODE_IN_4_LANES
-#define GMSL_DES_PHY_ALT_MEM_MAP12
 
 #define GMSL_CAMERA_NUM			4
 #define GMSL_DES_MAX96724
@@ -26,3 +26,9 @@
 #define GMSL_CAM_3_TEGRA_OX03A
 
 #include "tegra234-p3767-0003-p3768-0000-a0-gmsl.dtsi"
+
+/* Undefined after including GMSL dts. */
+#define GMSL_DES_PHY		1
+#define GMSL_CAMERA_NUM		4
+
+#include "tegra234-p3767-0003-p3768-0000-a0-gmsl-ox03a.dtsi"
