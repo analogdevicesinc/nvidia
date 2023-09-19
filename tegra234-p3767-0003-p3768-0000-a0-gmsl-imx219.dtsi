@@ -1,0 +1,225 @@
+#if GMSL_CAMERA_NUM >= 1
+&ser_0 {
+	pipe@0 {
+		maxim,dbl8;
+		maxim,soft-bpp = <10>;
+		maxim,bpp = <16>;
+	};
+
+	channel@1 {
+		reg = <1>;
+
+		label = "ser_0_ch_1";
+
+		maxim,embedded-data;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				ser_out_0_emb: endpoint {
+					remote-endpoint = <&des_in_0_emb>;
+				};
+			};
+		};
+	};
+};
+#endif
+
+#if GMSL_CAMERA_NUM >= 2
+&ser_1 {
+	pipe@0 {
+		maxim,dbl8;
+		maxim,soft-bpp = <10>;
+		maxim,bpp = <16>;
+	};
+
+	channel@1 {
+		reg = <1>;
+
+		maxim,embedded-data;
+
+		label = "ser_1_ch_1";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				ser_out_1_emb: endpoint {
+					remote-endpoint = <&des_in_1_emb>;
+				};
+			};
+		};
+	};
+};
+#endif
+
+#if GMSL_CAMERA_NUM >= 3
+&ser_2 {
+	pipe@0 {
+		maxim,dbl8;
+		maxim,soft-bpp = <10>;
+		maxim,bpp = <16>;
+	};
+
+	channel@1 {
+		reg = <1>;
+
+		maxim,embedded-data;
+
+		label = "ser_2_ch_1";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				ser_out_2_emb: endpoint {
+					remote-endpoint = <&des_in_2_emb>;
+				};
+			};
+		};
+	};
+};
+#endif
+
+#if GMSL_CAMERA_NUM >= 4
+&ser_3 {
+	pipe@0 {
+		maxim,dbl8;
+		maxim,soft-bpp = <10>;
+		maxim,bpp = <16>;
+	};
+
+	channel@1 {
+		reg = <1>;
+
+		maxim,embedded-data;
+
+		label = "ser_3_ch_1";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				ser_out_3_emb: endpoint {
+					remote-endpoint = <&des_in_3_emb>;
+				};
+			};
+		};
+	};
+};
+#endif
+
+&des {
+	phy@GMSL_DES_PHY {
+		maxim,alt2-mem-map8;
+	};
+
+#if GMSL_CAMERA_NUM >= 1
+	channel@4 {
+		reg = <4>;
+
+		maxim,phy-id = <GMSL_DES_PHY>;
+		maxim,embedded-data;
+
+		label = "des_ch_4";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@1 {
+				reg = <1>;
+
+				des_in_0_emb: endpoint {
+					remote-endpoint = <&ser_out_0_emb>;
+				};
+			};
+		};
+	};
+#endif
+
+#if GMSL_CAMERA_NUM >= 2
+	channel@5 {
+		reg = <5>;
+
+		maxim,phy-id = <GMSL_DES_PHY>;
+		maxim,embedded-data;
+
+		label = "des_ch_5";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@1 {
+				reg = <1>;
+
+				des_in_1_emb: endpoint {
+					remote-endpoint = <&ser_out_1_emb>;
+				};
+			};
+		};
+	};
+#endif
+
+#if GMSL_CAMERA_NUM >= 3
+	channel@6 {
+		reg = <6>;
+
+		maxim,phy-id = <GMSL_DES_PHY>;
+		maxim,embedded-data;
+
+		label = "des_ch_6";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@1 {
+				reg = <1>;
+
+				des_in_2_emb: endpoint {
+					remote-endpoint = <&ser_out_2_emb>;
+				};
+			};
+		};
+	};
+#endif
+
+#if GMSL_CAMERA_NUM >= 4
+	channel@7 {
+		reg = <7>;
+
+		maxim,phy-id = <GMSL_DES_PHY>;
+		maxim,embedded-data;
+
+		label = "des_ch_7";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@1 {
+				reg = <1>;
+
+				des_in_3_emb: endpoint {
+					remote-endpoint = <&ser_out_3_emb>;
+				};
+			};
+		};
+	};
+};
+#endif
