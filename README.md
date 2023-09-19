@@ -406,10 +406,10 @@ Although the resolution is not currently used, it is a necessary parameter.
 #### Software configuration for MAX96724 + 4xMAX9295A/MAX96717 + 4xOX03A <a id="sw-cfg-0"></a>
 
 ```
-media-ctl -d /dev/media0 --set-v4l2 '"ser_0_ch_0":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"ser_1_ch_0":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"ser_2_ch_0":0[fmt:SBGGR12_1X12/1920x1280]'
-media-ctl -d /dev/media0 --set-v4l2 '"ser_3_ch_0":0[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_0_ch_0":1[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_1_ch_0":1[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_2_ch_0":1[fmt:SBGGR12_1X12/1920x1280]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_3_ch_0":1[fmt:SBGGR12_1X12/1920x1280]'
 media-ctl -d /dev/media0 --set-v4l2 '"des_ch_0":0[fmt:SBGGR12_1X12/1920x1280]'
 media-ctl -d /dev/media0 --set-v4l2 '"des_ch_1":0[fmt:SBGGR12_1X12/1920x1280]'
 media-ctl -d /dev/media0 --set-v4l2 '"des_ch_2":0[fmt:SBGGR12_1X12/1920x1280]'
@@ -419,10 +419,10 @@ media-ctl -d /dev/media0 --set-v4l2 '"des_ch_3":0[fmt:SBGGR12_1X12/1920x1280]'
 #### Software configuration for MAX96724 + 4xMAX9295A/MAX96717 + 4xIMX219 <a id="sw-cfg-1"></a>
 
 ```
-media-ctl -d /dev/media0 --set-v4l2 '"ser_0_ch_0":0[fmt:SRGGB10_1X10/1920x1080]'
-media-ctl -d /dev/media0 --set-v4l2 '"ser_1_ch_0":0[fmt:SRGGB10_1X10/1920x1080]'
-media-ctl -d /dev/media0 --set-v4l2 '"ser_2_ch_0":0[fmt:SRGGB10_1X10/1920x1080]'
-media-ctl -d /dev/media0 --set-v4l2 '"ser_3_ch_0":0[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_0_ch_0":1[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_1_ch_0":1[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_2_ch_0":1[fmt:SRGGB10_1X10/1920x1080]'
+media-ctl -d /dev/media0 --set-v4l2 '"ser_3_ch_0":1[fmt:SRGGB10_1X10/1920x1080]'
 media-ctl -d /dev/media0 --set-v4l2 '"des_ch_1":0[fmt:SRGGB10_1X10/1920x1080]'
 media-ctl -d /dev/media0 --set-v4l2 '"des_ch_2":0[fmt:SRGGB10_1X10/1920x1080]'
 media-ctl -d /dev/media0 --set-v4l2 '"des_ch_3":0[fmt:SRGGB10_1X10/1920x1080]'
