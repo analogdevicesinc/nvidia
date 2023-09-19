@@ -459,6 +459,10 @@ To open the camera `0` in the `qv4l2` app, run the following command.
 
 `qv4l2 -d 0`
 
+To open 4 cameras at the same time, run the following command.
+
+`qv4l2 -d 0 & qv4l2 -d 1 & qv4l2 -d 2 & qv4l2 -d 3 &`
+
 The same applies for other cameras.
 
 ### Argus
