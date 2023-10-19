@@ -500,7 +500,7 @@ To run the Argus sample using 4 cameras, on a window of 1920x1080 size, run the 
 
 ### CSI Camera (Argus + OpenCV)
 
-To the the cameras using CSI Camera, you need to clone the `csi-camera` project.
+To test the cameras using CSI Camera, you need to clone the `csi-camera` project.
 
 Here is a table with the branch you need to clone depending on your release tag.
 
