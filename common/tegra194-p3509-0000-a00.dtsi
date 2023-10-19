@@ -25,7 +25,6 @@
 #define GMSL_DES_I2C_LABEL		cam_i2c
 #define GMSL_DES_PHY			2
 #define GMSL_DES_PHY_NUM_LANES		2
-#define GMSL_DES_PHY_ALT_MEM_MAP12
 
 #define GMSL_CAMERA_NUM			4
 #define GMSL_DES_MAX96724
