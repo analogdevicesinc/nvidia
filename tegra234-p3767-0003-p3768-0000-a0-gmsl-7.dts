@@ -25,9 +25,3 @@
 #define GMSL_CAM_3_TEGRA_IMX219
 
 #include "tegra234-p3767-0003-p3768-0000-a0-gmsl.dtsi"
-
-/* Undefined after including GMSL dts. */
-#define GMSL_DES_PHY			1
-#define GMSL_CAMERA_NUM			4
-
-#include "tegra234-p3767-0003-p3768-0000-a0-gmsl-imx219.dtsi"
