@@ -139,6 +139,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += i2c_mux_add_adapter_has_no_class_argument
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iio_dev_opaque_has_mlock
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_map_has_gfp_arg
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += kthread_complete_and_exit
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += media_entity_remote_pad
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mii_bus_struct_has_read_c45
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mii_bus_struct_has_write_c45
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += netif_set_tso_max_size

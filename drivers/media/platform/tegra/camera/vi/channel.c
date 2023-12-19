@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 /*
  * NVIDIA Tegra Video Input Device
  */
@@ -1945,7 +1945,7 @@ int tegra_channel_init_subdevices(struct tegra_channel *chan)
 	int len = 0;
 
 	/* set_stream of CSI */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 0, 0)
+#if defined(NV_MEDIA_ENTITY_REMOTE_PAD_PRESENT) /* Linux 6.0 */
 	pad = media_entity_remote_pad(&chan->pad);
 #else
 	pad = media_pad_remote_pad_first(&chan->pad);
@@ -1975,7 +1975,7 @@ int tegra_channel_init_subdevices(struct tegra_channel *chan)
 		if (!(pad->flags & MEDIA_PAD_FL_SINK))
 			break;
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 0, 0)
+#if defined(NV_MEDIA_ENTITY_REMOTE_PAD_PRESENT) /* Linux 6.0 */
 		pad = media_entity_remote_pad(pad);
 #else
 		pad = media_pad_remote_pad_first(pad);
