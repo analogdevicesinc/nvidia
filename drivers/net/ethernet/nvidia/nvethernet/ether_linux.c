@@ -6831,6 +6831,107 @@ static void ether_shutdown(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
+#ifndef OSI_STRIPPED_LIB
+/**
+ * @brief Revert the WOL settings
+ *
+ * Alogorithm: Create a struct ethtool_wolinfo to disable WOL settings
+ *
+ * @param[in] dev: Platform device associated with platform driver.
+ *
+ * @retval 0 on success
+ * @retval "negative value" on failure.
+ */
+static inline int ether_revert_wol(struct device *dev)
+{
+	int ret = 0;
+	u32 wolopts = 0;
+	struct net_device *ndev = dev_get_drvdata(dev);
+	struct ether_priv_data *pdata = netdev_priv(ndev);
+
+	swap(pdata->wol.wolopts, wolopts);
+	ret = ether_set_wol_impl(ndev, &pdata->wol);
+	pdata->wol.wolopts = wolopts;
+	if (ret)
+		dev_err(pdata->dev, "Fail to enable PHY network functionality %d\n", ret);
+
+	return ret;
+}
+
+/**
+ * @brief Ethernet platform driver prepare callback.
+ *
+ * Alogorithm: Configure the defer WOL settings if enabled by user
+ *
+ * @param[in] dev: Platform device associated with platform driver.
+ *
+ * @retval 0 on success
+ * @retval "negative value" on failure.
+ */
+static int ether_prepare(struct device *dev)
+{
+	int ret = 0;
+	struct net_device *ndev = dev_get_drvdata(dev);
+	struct ether_priv_data *pdata = netdev_priv(ndev);
+	struct phy_device *phydev = pdata->phydev;
+
+	if (pdata->wol.wolopts) {
+		ret = ether_set_wol_impl(ndev, &pdata->wol);
+		if (ret)
+			goto ether_prepare_fail;
+
+		ret = enable_irq_wake(phydev->irq);
+		if (ret) {
+			dev_err(pdata->dev, "PHY enable irq wake failed, %d\n",
+				ret);
+			goto ether_prepare_fail;
+		}
+		/* enable device wake on WoL set */
+		device_init_wakeup(&ndev->dev, true);
+	}
+
+ether_prepare_fail:
+	if (unlikely(ret))
+		ether_revert_wol(dev);
+
+	return ret;
+}
+
+/**
+ * @brief Ethernet platform driver complete callback.
+ *
+ * Alogorithm: Revert the defer WOL settings if enabled by user
+ *
+ * @param[in] dev: Platform device associated with platform driver.
+ */
+static void ether_complete(struct device *dev)
+{
+	int ret;
+	struct net_device *ndev = dev_get_drvdata(dev);
+	struct ether_priv_data *pdata = netdev_priv(ndev);
+	struct phy_device *phydev = pdata->phydev;
+
+	if (pdata->wol.wolopts) {
+		ret = ether_revert_wol(dev);
+		if (ret) {
+			dev_err(pdata->dev, "Fail to enable PHY network functionality %d\n", ret);
+			return;
+		}
+
+		ret = disable_irq_wake(phydev->irq);
+		if (ret) {
+			dev_info(pdata->dev,
+				 "PHY disable irq wake failed, %d\n",
+				 ret);
+		}
+		/* disable device wake on WoL reset */
+		device_init_wakeup(&ndev->dev, false);
+	}
+
+	return;
+}
+#endif /* !(OSI_STRIPPED_LIB) */
+
 /**
  * @brief Ethernet platform driver resume call.
  *
@@ -7035,10 +7136,14 @@ static int ether_resume_noirq(struct device *dev)
 		return ret;
 	}
 
-	return 0;
+	return ret;
 }
 
 static const struct dev_pm_ops ether_pm_ops = {
+#ifndef OSI_STRIPPED_LIB
+	.prepare = ether_prepare,
+	.complete = ether_complete,
+#endif /* !OSI_STRIPPED_LIB */
 	.suspend = ether_suspend_noirq,
 	.resume = ether_resume_noirq,
 };
