@@ -74,6 +74,10 @@ build_modules() {
 }
 
 build_nv_display_modules() {
+	if [[ ! -d "$NV_DISPLAY_PATH" ]]; then
+		return 0
+	fi
+
 	build_modules "$NV_DISPLAY_PATH" "${NV_DISPLAY_O_OPT[@]}"
 }
 
@@ -124,6 +128,10 @@ install_kernel_modules() {
 }
 
 install_nv_display_modules() {
+	if [[ ! -d "$NV_DISPLAY_PATH" ]]; then
+		return 0
+	fi
+
 	local modules_path="$1"
 	shift
 
