@@ -58,9 +58,15 @@ build_modules() {
 
 	if [[ -n "$dir_path" ]]; then
 		pushd "$dir_path"
+		if [[ $? -ne 0 ]]; then
+			return $?
+		fi
 	fi
 
 	make "${O_OPT[@]}" "${opts[@]}" "$MODULES_TARGET"
+	if [[ $? -ne 0 ]]; then
+		return $?
+	fi
 
 	if [[ -n "$dir_path" ]]; then
 		popd
@@ -98,6 +104,9 @@ install_modules() {
 
 	if [[ -n "$dir_path" ]]; then
 		pushd "$dir_path"
+		if [[ $? -ne 0 ]]; then
+			return $?
+		fi
 	fi
 
 	make "${O_OPT[@]}" "${opts[@]}" "$mod_path_arg" "$mod_strip_arg" "$MODULES_INSTALL_TARGET"
@@ -125,7 +134,21 @@ install_nv_display_modules() {
 }
 
 build_modules
+if [[ $? -ne 0 ]]; then
+	exit
+fi
+
 build_nv_display_modules
+if [[ $? -ne 0 ]]; then
+	exit
+fi
 
 install_kernel_modules "$MODULES_PATH"
+if [[ $? -ne 0 ]]; then
+	exit
+fi
+
 install_nv_display_modules "$MODULES_PATH"
+if [[ $? -ne 0 ]]; then
+	exit
+fi
