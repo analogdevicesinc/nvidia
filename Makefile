@@ -30,6 +30,7 @@ dtb-$(BUILD_ENABLE) += tegra234-p3767-0003-p3768-0000-a0-gmsl-4.dtb
 dtb-$(BUILD_ENABLE) += tegra234-p3767-0003-p3768-0000-a0-gmsl-5.dtb
 dtb-$(BUILD_ENABLE) += tegra234-p3767-0003-p3768-0000-a0-gmsl-6.dtb
 dtb-$(BUILD_ENABLE) += tegra234-p3767-0003-p3768-0000-a0-gmsl-7.dtb
+dtb-$(BUILD_ENABLE) += tegra234-p3767-0003-p3768-0000-a0-gmsl-8.dtb
 dtb-$(BUILD_ENABLE) += tegra234-p3767-0004-p3768-0000-a0.dtb
 dtbo-$(BUILD_ENABLE) += tegra234-p3767-0000-p3509-a02-adafruit-sph0645lm4h.dtbo
 dtbo-$(BUILD_ENABLE) += tegra234-p3767-0000-p3509-a02-adafruit-uda1334a.dtbo
