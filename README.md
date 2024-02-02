@@ -26,6 +26,7 @@ Further instructions can be found in the [Main documentation](https://github.com
 | Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 4xMAX96717 + 4xOX03A on CAM1 at 4 lanes][cfg-5]              	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-5.dtb][dts-5] 	|
 | Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 4xMAX96717 + 4xIMX219 on CAM0 at 2 lanes][cfg-6]             	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-6.dtb][dts-6] 	|
 | Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 4xMAX96717 + 4xIMX219 on CAM1 at 4 lanes][cfg-7]             	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-7.dtb][dts-7] 	|
+| Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96714 + 1xMAX9295A + 1xOX03A on CAM1 at 4 lanes][cfg-8]              	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-8.dtb][dts-8] 	|
 
 [cfg-0]: #max96724--2xmax9295a--2xmax96717--4xox03a-on-cam0-at-2-lanes
 [cfg-1]: #max96724--4xmax96717--4xox03a-on-cam0-at-2-lanes
@@ -35,6 +36,7 @@ Further instructions can be found in the [Main documentation](https://github.com
 [cfg-5]: #max96724--4xmax96717--4xox03a-on-cam1-at-4-lanes
 [cfg-6]: #max96724--4xmax96717--4ximx219-on-cam0-at-2-lanes
 [cfg-7]: #max96724--4xmax96717--4ximx219-on-cam1-at-4-lanes
+[cfg-8]: #max96714--1xmax9295a--1xox03a-on-cam1-at-4-lanes
 
 [dts-0]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-0.dts
 [dts-1]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-1.dts
@@ -44,6 +46,7 @@ Further instructions can be found in the [Main documentation](https://github.com
 [dts-5]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-5.dts
 [dts-6]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-6.dts
 [dts-7]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-7.dts
+[dts-8]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-8.dts
 
 ## Source code
 
@@ -120,6 +123,10 @@ Further instructions can be found in the [Main documentation](https://github.com
 ### MAX96724 + 4xMAX96717 + 4xIMX219 on CAM1 at 4 lanes
 
 [Software configuration](#sw-cfg-1).
+
+### MAX96714 + 1xMAX9295A + 1xOX03A on CAM1 at 4 lanes
+
+[Software configuration](#sw-cfg-0).
 
 ## Hardware configuration
 
