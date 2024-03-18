@@ -1,5 +1,16 @@
 # GMSL drivers for NVIDIA Jetson
 
+## Table of contents
+1. [Applying patches to the Jetson Linux tree](#applying-patches-to-the-jetson-linux-tree)
+2. [Releases](#releases)
+3. [Source Code](#source-code)
+4. [Device tree](#device-tree)
+5. [Configurations](#configurations)
+6. [Hardware configuration](#hardware-configuration)
+7. [Testing](#testing)
+8. [Debugging](#debugging)
+9. [Software configuration](#software-configuration)
+
 ## Applying patches to the Jetson Linux tree
 
 To be able to apply the patches provided in this repo, you have to clone it in a location of your choice by running the following command.
