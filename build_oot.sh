@@ -38,22 +38,22 @@ if [[ $? -ne 0 ]]; then
 	exit
 fi
 
-make "${O_OPT[@]}" install -C "$KERNEL_PATH_ABS"
-if [[ $? -ne 0 ]]; then
-	exit
-fi
-
 make "${O_OPT[@]}" modules
 if [[ $? -ne 0 ]]; then
 	exit
 fi
 
-make "${O_OPT[@]}" modules_install
+make "${O_OPT[@]}" dtbs
 if [[ $? -ne 0 ]]; then
 	exit
 fi
 
-make "${O_OPT[@]}" dtbs
+make "${O_OPT[@]}" install -C "$KERNEL_PATH_ABS"
+if [[ $? -ne 0 ]]; then
+	exit
+fi
+
+make "${O_OPT[@]}" modules_install
 if [[ $? -ne 0 ]]; then
 	exit
 fi
