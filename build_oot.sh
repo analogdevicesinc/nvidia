@@ -1,5 +1,40 @@
 #!/bin/bash
 
+print_usage() {
+	echo "usage: $0 [options] [target]"
+	echo "options:"
+	echo "	-k|--kernel: build target in kernel"
+	echo "	-s|--kernel-source: build target in kernel source"
+
+	exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+	case $1 in
+	-k|--kernel)
+		TARGET_IN_KERNEL=1
+		shift
+		;;
+	-s|--kernel-source)
+		TARGET_IN_KERNEL_SOURCE=1
+		shift
+		;;
+	-*|--*)
+		echo "Unknown option $1"
+		print_usage
+		exit 1
+		;;
+	*)
+		POSITIONAL_ARGS+=("$1")
+		shift
+		;;
+	esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}"
+
+TARGETS=("$@")
+
 SOURCE_PATH="."
 KERNEL_PATH="$SOURCE_PATH/kernel"
 KERNEL_SRC_PATH="$KERNEL_PATH/kernel-jammy-src"
@@ -33,10 +68,33 @@ MODULES_INSTALL_TARGET="modules_install"
 DTBS_TARGET="dtbs"
 
 O_OPT=()
+O_OPT+=(ARCH="arm64")
+O_OPT+=(LOCALVERSION="-tegra")
 O_OPT+=(INSTALL_MOD_PATH="$MODULES_OUT_PATH_ABS")
 O_OPT+=(KERNEL_HEADERS="$KERNEL_HEADERS_PATH_ABS")
 
-make -C "$KERNEL_PATH"
+if [[ -n "$TARGETS" ]]; then
+	if [[ -n "$TARGET_IN_KERNEL" ]]; then
+		make "${O_OPT[@]}" "${TARGETS[@]}" -C "$KERNEL_PATH"
+		if [[ $? -ne 0 ]]; then
+			exit
+		fi
+	elif [[ -n "$TARGET_IN_KERNEL_SOURCE" ]]; then
+		make "${O_OPT[@]}" "${TARGETS[@]}" -C "$KERNEL_SRC_PATH"
+		if [[ $? -ne 0 ]]; then
+			exit
+		fi
+	else
+		make "${O_OPT[@]}" "${TARGETS[@]}"
+		if [[ $? -ne 0 ]]; then
+			exit
+		fi
+	fi
+
+	exit
+fi
+
+make "${O_OPT[@]}" -C "$KERNEL_PATH"
 if [[ $? -ne 0 ]]; then
 	exit
 fi
