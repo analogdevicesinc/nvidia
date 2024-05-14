@@ -2,7 +2,6 @@
 
 SOURCE_PATH="."
 KERNEL_PATH="$SOURCE_PATH/kernel"
-KERNEL_PATH_ABS=$(realpath "$KERNEL_PATH")
 KERNEL_SRC_PATH="$KERNEL_PATH/kernel-jammy-src"
 
 KERNEL_HEADERS_PATH="$KERNEL_SRC_PATH"
@@ -52,7 +51,7 @@ if [[ $? -ne 0 ]]; then
 	exit
 fi
 
-make "${O_OPT[@]}" install -C "$KERNEL_PATH_ABS"
+make "${O_OPT[@]}" install -C "$KERNEL_PATH"
 if [[ $? -ne 0 ]]; then
 	exit
 fi
