@@ -1,6 +1,5 @@
 #!/bin/bash
 
-DTBS=1
 KERNEL_OUT_PATH="../../kernel_out"
 MODULES_PATH="../../modules_out"
 SOURCE_PATH="."
