@@ -1,0 +1,30 @@
+/*
+ * Top level DTS file for CVM:P3668-0001 and AD-GMSL522-SL.
+ *
+ * Copyright (c) 2023, Analog Devices Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ */
+
+/dts-v1/;
+#include "common/tegra194-p3668-common.dtsi"
+#include "common/tegra194-gmsl522-reva.dtsi"
+
+/ {
+	nvidia,dtsfilename = __FILE__;
+	nvidia,dtbbuildtime = __DATE__, __TIME__;
+
+	compatible = "adi,gmsl522+p3668-0001", "nvidia,tegra194";
+	model = "Analog Devices AD-GMSL522-SL RevA";
+
+	sdhci@3400000 {
+		status = "disabled";
+	};
+};

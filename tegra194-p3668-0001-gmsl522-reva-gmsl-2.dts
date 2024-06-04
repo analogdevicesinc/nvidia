@@ -1,0 +1,37 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2023 Analog Devices Inc.
+ */
+
+/dts-v1/;
+
+#define GMSL
+#define GMSL_TEGRA_PLATFORM
+
+#define GMSL_TEGRA_PORT			4 // 0 for QTH P1 / 4 for internal MAX96724
+
+#define GMSL_DES_PHY			2 // 1 for QTH P1 / 2 for internal MAX96724
+#define GMSL_DES_PHY_NUM_LANES	4
+#define GMSL_DES_LANE_RATE		2500000000
+
+#define GMSL_CAMERA_NUM			4
+#define GMSL_DES_MAX96724
+#define GMSL_SER_0_MAX96717
+#define GMSL_SER_1_MAX96717
+#define GMSL_SER_2_MAX96717
+#define GMSL_SER_3_MAX96717
+#define GMSL_CAM_0_TEGRA_OX03J
+#define GMSL_CAM_1_TEGRA_OX03J
+#define GMSL_CAM_2_TEGRA_OX03J
+#define GMSL_CAM_3_TEGRA_OX03J
+
+#define GMSL_DES_I2C_LABEL		gen2_i2c // cam_i2c for QTH P1 / gen2_i2c for internal MAX96724
+
+#include "tegra194-p3668-0001-gmsl522-reva-gmsl.dtsi"
+/ {
+	model = "Analog Devices AD-GMSL522-SL + OX03J";
+};
+
+/* Undefined after including GMSL dts. */
+#define GMSL_DES_PHY			2 // 1 for QTH P1 / 2 for internal MAX96724
+#define GMSL_CAMERA_NUM			4

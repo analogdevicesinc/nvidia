@@ -1,0 +1,40 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2023 Analog Devices Inc.
+ */
+
+/dts-v1/;
+
+#define GMSL
+#define GMSL_TEGRA_PLATFORM
+
+#define GMSL_TEGRA_PORT			4
+
+#define GMSL_DES_PHY			2
+#define GMSL_DES_PHY_NUM_LANES	4
+#define GMSL_DES_LANE_RATE		2500000000
+
+#define GMSL_CAMERA_NUM			4
+#define GMSL_DES_MAX96724
+#define GMSL_SER_0_MAX96717
+#define GMSL_SER_1_MAX96717
+#define GMSL_SER_2_MAX96717
+#define GMSL_SER_3_MAX96717
+#define GMSL_CAM_0_TEGRA_IMX219
+#define GMSL_CAM_1_TEGRA_IMX219
+#define GMSL_CAM_2_TEGRA_IMX219
+#define GMSL_CAM_3_TEGRA_IMX219
+
+#define GMSL_DES_I2C_LABEL		gen2_i2c
+
+#include "tegra194-p3668-0001-gmsl522-revb-gmsl.dtsi"
+
+/ {
+	model = "Analog Devices AD-GMSL522-SL + IMX219";
+};
+
+/* Undefined after including GMSL dts. */
+#define GMSL_DES_PHY			2
+#define GMSL_CAMERA_NUM			4
+
+#include "common/tegra194-gmsl522-reva-gmsl-imx219.dtsi"

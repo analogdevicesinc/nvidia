@@ -1,0 +1,295 @@
+/*
+ * Copyright (c) 2023, Analog Devices Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ */
+#include <dt-bindings/gpio/tegra194-gpio.h>
+#include "dt-bindings/input/input.h"
+#include "tegra194-fixed-regulator-gmsl522-reva.dtsi"
+#include "tegra194-p3509-disp.dtsi"
+#include "tegra194-audio-p3668.dtsi"
+
+#define CAMERA_I2C_MUX_BUS(x) (0x1E + x)
+
+/ {
+	gpio-keys {
+		compatible = "gpio-keys";
+		gpio-keys,name = "gpio-keys";
+
+		forcerecovery {
+			label = "force-recovery";
+			gpios = <&tegra_main_gpio TEGRA194_MAIN_GPIO(G, 0) GPIO_ACTIVE_LOW>;
+			linux,code = <BTN_1>;
+		};
+
+		power_key {
+			label = "power-key";
+			gpios = <&tegra_aon_gpio TEGRA194_AON_GPIO(EE, 4) GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_POWER>;
+			gpio-key,wakeup;
+		};
+	};
+	pwm-fan {
+		pwms = <&tegra_pwm6 0 45334>;
+		vdd-fan-supply = <&p3509_vdd_fan>;
+		profiles {
+			default = "quiet";
+			quiet {
+				state_cap = <4>;
+				active_pwm = <0 130 160 200 255 255 255 255 255 255>;
+			};
+			cool {
+				state_cap = <4>;
+				active_pwm = <0 140 170 200 255 255 255 255 255 255>;
+			};
+		};
+	};
+	thermal-fan-est {
+		profiles {
+			default = "quiet";
+			quiet {
+				active_trip_temps = <0 46000 60000 68000 76000
+						140000 150000 160000 170000 180000>;
+				active_hysteresis = <0 8000 8000 7000 7000
+						0 0 0 0 0>;
+			};
+			cool {
+				active_trip_temps = <0 35000 45000 53000 61000
+						140000 150000 160000 170000 180000>;
+				active_hysteresis = <0 8000 8000 7000 7000
+						0 0 0 0 0>;
+			};
+		};
+	};
+
+	/delete-node/ leds;
+	/delete-node/ hdr40_i2c0;
+
+	gpio@2200000 {
+		max96724_pwdn {
+			gpio-hog;
+			output-high;
+			gpios = <TEGRA194_MAIN_GPIO(Q, 5) 0>;
+			label = "max96724_pwdn";
+		};
+
+		max96717_pwdn {
+			gpio-hog;
+			output-high;
+			gpios = <TEGRA194_MAIN_GPIO(R, 2) 0>;
+			label = "max96717_pwdn";
+		};
+
+		max96853_pwdn {
+			gpio-hog;
+			output-high;
+			gpios = <TEGRA194_MAIN_GPIO(Q, 6) 0>;
+			label = "max96853_pwdn";
+		};
+	};
+
+	gpio@c2f0000 {
+		max96880b_pwdn {
+			gpio-hog;
+			output-high;
+			gpios = <TEGRA194_AON_GPIO(CC, 1) 0>;
+			label = "max96880b_pwdn";
+		};
+
+		max96864_pwdn {
+			gpio-hog;
+			output-high;
+			gpios = <TEGRA194_AON_GPIO(CC, 2) 0>;
+			label = "max96864_pwdn";
+		};
+	};
+
+	serial@3110000 {
+		status = "okay";
+	};
+
+	tachometer@39c0000 {
+		status = "okay";
+	};
+
+	pwm@3280000 {
+		status = "okay";
+	};
+
+	pwm@32c0000 {
+		status = "okay";
+	};
+
+	pwm@32d0000 {
+		status = "okay";
+	};
+
+	pwm@32f0000 {
+		status = "okay";
+	};
+
+	spi@c260000 {
+		status = "disabled";
+	};
+
+	spi@3300000 {
+		status = "disabled";
+	};
+
+	spi@3210000 {
+		status = "disabled";
+	};
+
+	spi@3230000 {
+		status = "disabled";
+	};
+
+	gpio@2200000 {
+		gpio-line-names = "",   "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "";
+	};
+
+	gpio@c2f0000 {
+		gpio-line-names = "",   "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "",
+		"", "",  "",     "",     "",     "",     "",     "",     "",     "",
+		"",     "",     "",     "",     "",     "",     "",     "",     "",     "";
+	};
+};
+
+&xusb_padctl {
+	ports {
+		usb2-0 {
+			connector {
+				vbus-gpio = <&tegra_main_gpio TEGRA194_MAIN_GPIO(Q, 3) GPIO_ACTIVE_LOW>;
+			};
+		};
+	};
+};
+
+&gen1_i2c {
+};
+
+&gen2_i2c {
+	//MAX96724
+};
+
+&cam_i2c {
+	//QTH DESER
+};
+
+&dp_aux_ch3_i2c {
+	tca9548: tca9548@77 {
+		compatible = "nxp,pca9548";
+		reg = <0x77>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		vcc-supply = <&vdd_3v3>;
+		reset-gpios = <&tegra_main_gpio TEGRA194_MAIN_GPIO(X, 4) GPIO_ACTIVE_LOW>;
+		force_bus_start = <CAMERA_I2C_MUX_BUS(0)>;
+		i2c-mux-idle-disconnect;
+		i2c@0 {
+			reg = <0>;
+			i2c-mux,deselect-on-exit;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+		i2c@1 {
+			reg = <1>;
+			i2c-mux,deselect-on-exit;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+		i2c@2 {
+			reg = <2>;
+			i2c-mux,deselect-on-exit;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+		i2c@3 {
+			reg = <3>;
+			i2c-mux,deselect-on-exit;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+		i2c@4 {
+			reg = <4>;
+			i2c-mux,deselect-on-exit;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+		i2c@5 {
+			reg = <5>;
+			i2c-mux,deselect-on-exit;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			//MAX20087
+		};
+		i2c@6 {
+			reg = <6>;
+			i2c-mux,deselect-on-exit;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			ad7291@2f {
+				compatible = "adi,ad7291";
+				reg = <0x2f>;
+			};
+
+			pwmon@5a {
+				compatible = "adi,adm1177";
+				reg = <0x5a>;
+				shunt-resistor-micro-ohms = <10000>; /* 10 mOhm */
+				adi,shutdown-threshold-microamp = <10000000>; /* 10 A */
+				adi,vrange-high-enable;
+			};
+		};
+		i2c@7 {
+			reg = <7>;
+			i2c-mux,deselect-on-exit;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			ad5589@34 {
+				compatible = "adi,adp5589";
+				reg = <0x34>;
+				#gpio-cells = <2>;
+				gpio-controller;
+			};
+
+			at24@56 {
+				compatible = "atmel,24c32";
+				reg = <0x56>;
+				pagesize = <32>;
+			};
+		};
+	};
+};

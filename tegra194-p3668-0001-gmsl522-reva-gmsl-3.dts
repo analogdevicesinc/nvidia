@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2023 Analog Devices Inc.
+ */
+
+/dts-v1/;
+
+#include "tegra194-p3668-0001-gmsl522-reva.dts"
+
+/ {
+	model = "Analog Devices AD-GMSL522-SL - GMSL GUI";
+};
+
+#include "common/tegra194-gmsl522-reva-gmsl-generic.dtsi"
