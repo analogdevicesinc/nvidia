@@ -38,6 +38,9 @@ Further instructions can be found in the [Main documentation](https://github.com
 | Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 4xMAX96717 + 4xIMX219 on CAM0 at 2 lanes][cfg-6]             	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-6.dtb][dts-6] 	|
 | Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 4xMAX96717 + 4xIMX219 on CAM1 at 4 lanes][cfg-7]             	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-7.dtb][dts-7] 	|
 | Jetson Orin Nano Developer Kit 	| jetson_35.3.1 	| [MAX96714 + 1xMAX9295A + 1xOX03A on CAM1 at 4 lanes][cfg-8]              	| [tegra234-p3767-0003-p3768-0000-a0-gmsl-8.dtb][dts-8] 	|
+| AD-GMSL522-SL Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 4xMAX96717 + 4xIMX219 on INTERNAL DESER at 4 lanes][cfg-6]              	| [tegra194-p3668-0001-gmsl522-revb-gmsl-0.dts][dts-9] 	|
+| AD-GMSL522-SL Developer Kit 	| jetson_35.3.1 	| [MAX96724 + 4xMAX96717 + 4xOX03A on INTERNAL DESER at 4 lanes][cfg-1]              	| [tegra194-p3668-0001-gmsl522-revb-gmsl-1.dts][dts-10] 	|	|
+| AD-GMSL522-SL Developer Kit 	| jetson_35.3.1 	| [GMSL GUI][cfg-8]              							| [tegra194-p3668-0001-gmsl522-revb-gmsl-3.dts][dts-11] 	|
 
 [cfg-0]: #max96724--2xmax9295a--2xmax96717--4xox03a-on-cam0-at-2-lanes
 [cfg-1]: #max96724--4xmax96717--4xox03a-on-cam0-at-2-lanes
@@ -58,6 +61,9 @@ Further instructions can be found in the [Main documentation](https://github.com
 [dts-6]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-6.dts
 [dts-7]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-7.dts
 [dts-8]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t23x_p3768_kernel-dts/tegra234-p3767-0003-p3768-0000-a0-gmsl-8.dts
+[dts-9]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t19x_gmsl522_kernel-dts/tegra194-p3668-0001-gmsl522-revb-gmsl-0.dts
+[dts-10]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t19x_gmsl522_kernel-dts/tegra194-p3668-0001-gmsl522-revb-gmsl-1.dts
+[dts-11]: https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/hardware_nvidia_platform_t19x_gmsl522_kernel-dts/tegra194-p3668-0001-gmsl522-revb-gmsl-3.dts
 
 ## Source code
 
