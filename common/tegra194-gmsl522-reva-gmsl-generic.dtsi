@@ -206,7 +206,7 @@
 
 		mode0 {
 			num_lanes = "4";
-			tegra_sinterface = "serial_e";
+			tegra_sinterface = "serial_a";
 			deskew_initial_enable = "false";
 			phy_mode = "DPHY";
 
@@ -218,7 +218,7 @@
 			line_length = "1920";
 			pix_clk_hz = "0"; /* Do not update */
 
-			serdes_lane_rate = "1500000000";
+			serdes_link_freq = "750000000";
 
 			min_framerate = "1000000"; /* 2.0 fps */
 			max_framerate = "90000000"; /* 90.0 fps */
@@ -249,7 +249,7 @@
 
 		mode0 {
 			num_lanes = "4";
-			tegra_sinterface = "serial_e";
+			tegra_sinterface = "serial_c";
 			deskew_initial_enable = "false";
 			phy_mode = "DPHY";
 
@@ -261,7 +261,7 @@
 			line_length = "1920";
 			pix_clk_hz = "0"; /* Do not update */
 
-			serdes_lane_rate = "1500000000";
+			serdes_link_freq = "750000000";
 
 			min_framerate = "1000000"; /* 2.0 fps */
 			max_framerate = "90000000"; /* 90.0 fps */
@@ -304,7 +304,7 @@
 			line_length = "1920";
 			pix_clk_hz = "0"; /* Do not update */
 
-			serdes_lane_rate = "1500000000";
+			serdes_link_freq = "750000000";
 
 			min_framerate = "1000000"; /* 2.0 fps */
 			max_framerate = "90000000"; /* 90.0 fps */
@@ -328,7 +328,7 @@
 			};
 		};
 	};
-		cam4: cam4@6 {
+	cam4: cam4@6 {
 		compatible = "adi,cam_v1";
 		/* I2C device address */
 		reg = <0x6>;
@@ -347,7 +347,7 @@
 			line_length = "1920";
 			pix_clk_hz = "0"; /* Do not update */
 
-			serdes_lane_rate = "1500000000";
+			serdes_link_freq = "750000000";
 
 			min_framerate = "1000000"; /* 2.0 fps */
 			max_framerate = "90000000"; /* 90.0 fps */
@@ -371,7 +371,7 @@
 			};
 		};
 	};
-		cam5: cam5@7 {
+	cam5: cam5@7 {
 		compatible = "adi,cam_v1";
 		/* I2C device address */
 		reg = <0x7>;
@@ -390,7 +390,7 @@
 			line_length = "1920";
 			pix_clk_hz = "0"; /* Do not update */
 
-			serdes_lane_rate = "1500000000";
+			serdes_link_freq = "750000000";
 
 			min_framerate = "1000000"; /* 2.0 fps */
 			max_framerate = "90000000"; /* 90.0 fps */
@@ -414,7 +414,7 @@
 			};
 		};
 	};
-		cam6: cam6@8 {
+	cam6: cam6@8 {
 		compatible = "adi,cam_v1";
 		/* I2C device address */
 		reg = <0x8>;
@@ -433,7 +433,7 @@
 			line_length = "1920";
 			pix_clk_hz = "0"; /* Do not update */
 
-			serdes_lane_rate = "1500000000";
+			serdes_link_freq = "750000000";
 
 			min_framerate = "1000000"; /* 2.0 fps */
 			max_framerate = "90000000"; /* 90.0 fps */
