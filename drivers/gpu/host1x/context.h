@@ -2,7 +2,7 @@
 /*
  * Host1x context devices
  *
- * Copyright (c) 2020, NVIDIA Corporation.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  */
 
 #ifndef __HOST1X_CONTEXT_H
@@ -28,6 +28,7 @@ struct host1x_hw_memory_context {
 	refcount_t ref;
 	struct pid *owner;
 
+	struct device_dma_parameters dma_parms;
 	struct device dev;
 	u64 dma_mask;
 	u32 stream_id;
