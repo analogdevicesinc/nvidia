@@ -72,6 +72,7 @@ static struct {
 } cam_res[] = {
 	{640,	480},
 	{1024,	768},
+	{1280,	720},
 	{1920,	1080},
 	{1920,	1280},
 	{1920,	1536},
@@ -122,7 +123,7 @@ static int cam_s_stream(struct v4l2_subdev *sd, int enable)
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct device *dev = &client->dev;
 
-	dev_dbg(dev, "%s++ enable %d\n", __func__, enable);
+	dev_dbg(dev, "%s: enable %d\n", __func__, enable);
 
 	return 0;
 }
