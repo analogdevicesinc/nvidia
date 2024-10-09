@@ -245,7 +245,15 @@ static int extract_pixel_format(
 {
 	size_t size = strnlen(pixel_t, OF_MAX_STR_LEN);
 
-	if (strncmp(pixel_t, "bayer_bggr10", size) == 0)
+	if (strncmp(pixel_t, "bayer_bggr8", size) == 0)
+		*format = V4L2_PIX_FMT_SBGGR8;
+	else if (strncmp(pixel_t, "bayer_rggb8", size) == 0)
+		*format = V4L2_PIX_FMT_SRGGB8;
+	else if (strncmp(pixel_t, "bayer_grbg8", size) == 0)
+		*format = V4L2_PIX_FMT_SGRBG8;
+	else if (strncmp(pixel_t, "bayer_gbrg8", size) == 0)
+		*format = V4L2_PIX_FMT_SGBRG8;
+	else if (strncmp(pixel_t, "bayer_bggr10", size) == 0)
 		*format = V4L2_PIX_FMT_SBGGR10;
 	else if (strncmp(pixel_t, "bayer_rggb10", size) == 0)
 		*format = V4L2_PIX_FMT_SRGGB10;
