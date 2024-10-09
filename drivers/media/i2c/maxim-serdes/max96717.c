@@ -34,6 +34,11 @@ struct max96717_priv {
 	struct pinctrl_dev *pctldev;
 };
 
+enum max96717_part {
+	MAX96717,
+	MAX9295,
+};
+
 struct max96717_chip_info {
 	bool supports_tunnel_mode;
 	bool supports_noncontinuous_clock;
@@ -46,6 +51,7 @@ struct max96717_chip_info {
 	unsigned int num_lane_configs;
 	unsigned int lane_configs[MAX96717_LANE_CONFIGS_NUM][MAX96717_PHYS_NUM];
 	unsigned int phy_configs[MAX96717_LANE_CONFIGS_NUM];
+	enum max96717_part part;
 };
 
 #define ser_to_priv(ser) \
@@ -443,8 +449,11 @@ static int max96717_conf_pin_config_set_one(struct max96717_priv *priv,
 
 	switch (param) {
 	case PIN_CONFIG_OUTPUT:
-		config = pinconf_to_config_packed(PIN_CONFIG_OUTPUT_ENABLE, 1);
-		return max96717_conf_pin_config_set_one(priv, offset, config);
+		if (priv->info->part == MAX96717) {
+			config = pinconf_to_config_packed(PIN_CONFIG_OUTPUT_ENABLE, 1);
+			return max96717_conf_pin_config_set_one(priv, offset, config);
+		}
+		break;
 	case PIN_CONFIG_OUTPUT_ENABLE:
 		config = pinconf_to_config_packed(MAX96717_PINCTRL_GMSL_RX_EN, 0);
 		return max96717_conf_pin_config_set_one(priv, offset, config);
@@ -1261,6 +1270,7 @@ static const struct max96717_chip_info max96717_info = {
 		0b000,
 		0b000,
 	},
+	.part = MAX96717,
 };
 
 static const struct max96717_chip_info max9295a_info = {
@@ -1278,6 +1288,7 @@ static const struct max96717_chip_info max9295a_info = {
 		0b000,
 		0b000,
 	},
+	.part = MAX9295,
 };
 
 static const struct of_device_id max96717_of_ids[] = {
