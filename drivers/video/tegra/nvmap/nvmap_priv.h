@@ -949,7 +949,8 @@ void nvmap_dma_mark_declared_memory_unoccupied(struct device *dev,
 					 dma_addr_t device_addr, size_t size);
 
 extern void __dma_flush_area(const void *cpu_va, size_t size);
-extern void __dma_map_area(const void *cpu_va, size_t size, int dir);
+void __dma_map_area_from_device(const void *cpu_va, size_t size);
+void __dma_map_area_to_device(const void *cpu_va, size_t size);
 
 int nvmap_assign_pages_to_handle(struct nvmap_client *client,
 		struct nvmap_handle **hs, struct nvmap_handle *h,
