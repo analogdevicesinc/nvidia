@@ -6502,6 +6502,27 @@ compile_test() {
             compile_check_conftest "$CODE" "NV___ALLOC_DISK_NODE_HAS_LKCLASS_ARG" "" "types"
         ;;
 
+        bin_attribute_struct_mmap_has_const_bin_attribute_arg)
+            #
+            # Determine if the 'bin_attribute' structure 'mmap' function pointer
+            # has const 'struct bin_attribute' argument.
+            #
+            # Commit 94a20fb9af16 ("sysfs: treewide: constify attribute callback
+            # of bin_attribute::mmap()") updated the 'mmap' function pointer to
+            # take a const 'bin_attribute' structure in Linux v6.13.
+            #
+            CODE="
+            #include <linux/sysfs.h>
+            void conftest(struct bin_attribute *attr) {
+                    int (*fn)(struct file *, struct kobject *,
+                              const struct bin_attribute *,
+                              struct vm_area_struct *) = attr->mmap;
+            }"
+
+            compile_check_conftest "$CODE" \
+                    "NV_BIN_ATTRIBUTE_STRUCT_MMAP_HAS_CONST_BIN_ATTRIBUTE_ARG" "" "types"
+        ;;
+
         blk_execute_rq_has_no_gendisk_arg)
             #
             # Determine if the function blk_execute_rq() has an argument of
