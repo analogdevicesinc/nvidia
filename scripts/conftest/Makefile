@@ -139,6 +139,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += i2c_driver_struct_remove_return_type_int
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += i2c_mux_add_adapter_has_no_class_argument
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iio_dev_opaque_has_mlock
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_map_has_gfp_arg
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += irq_get_nr_irqs
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += kthread_complete_and_exit
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += media_entity_remote_pad
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mm_struct_struct_has_percpu_counter_rss_stat
