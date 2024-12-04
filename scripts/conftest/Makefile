@@ -149,6 +149,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += media_entity_remote_pad
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mm_struct_struct_has_percpu_counter_rss_stat
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mii_bus_struct_has_read_c45
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mii_bus_struct_has_write_c45
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += module_import_ns_calls_stringify
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += netif_set_tso_max_size
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += netif_napi_add_weight
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += no_llseek
