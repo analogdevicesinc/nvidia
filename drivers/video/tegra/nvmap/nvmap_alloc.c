@@ -573,8 +573,13 @@ static int handle_page_alloc(struct nvmap_client *client,
 			if (page_index < nr_page) {
 				int nid = h->numa_id == NUMA_NO_NODE ? numa_mem_id() : h->numa_id;
 
+#if defined(NV__ALLOC_PAGES_BULK_HAS_NO_PAGE_LIST_ARG)
+				allocated = __alloc_pages_bulk(gfp, nid, NULL,
+						nr_page, pages);
+#else
 				allocated = __alloc_pages_bulk(gfp, nid, NULL,
 						nr_page, NULL, pages);
+#endif
 			}
 #endif
 			for (i = allocated; i < nr_page; i++) {
