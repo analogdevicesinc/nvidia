@@ -44,4 +44,19 @@
 			serdes_link_freq = "1250000000";
 		};
 	};
+	cam7: cam7@9 {
+		mode0 {
+			serdes_link_freq = "1250000000";
+		};
+	};
+	cam8: cam8@a {
+		mode0 {
+			serdes_link_freq = "1250000000";
+		};
+	};
+	cam9: cam9@b {
+		mode0 {
+			serdes_link_freq = "1250000000";
+		};
+	};
 };

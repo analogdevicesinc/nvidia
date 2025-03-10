@@ -2,7 +2,7 @@
 
 / {
 	tegra-capture-vi  {
-		num-channels = <6>;
+		num-channels = <9>;
 		ports {
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -18,8 +18,8 @@
 			port@1 {
 				reg = <1>;
 				cam_vi_in1: endpoint {
-					vc-id = <0>;
-					port-index = <2>;
+					vc-id = <1>;
+					port-index = <0>;
 					bus-width = <4>;
 					remote-endpoint = <&cam_csi_out1>;
 				};
@@ -27,8 +27,8 @@
 			port@2 {
 				reg = <2>;
 				cam_vi_in2: endpoint {
-					vc-id = <0>;
-					port-index = <4>;
+					vc-id = <2>;
+					port-index = <0>;
 					bus-width = <4>;
 					remote-endpoint = <&cam_csi_out2>;
 				};
@@ -36,8 +36,8 @@
 			port@3 {
 				reg = <3>;
 				cam_vi_in3: endpoint {
-					vc-id = <1>;
-					port-index = <4>;
+					vc-id = <3>;
+					port-index = <0>;
 					bus-width = <4>;
 					remote-endpoint = <&cam_csi_out3>;
 				};
@@ -45,8 +45,8 @@
 			port@4 {
 				reg = <4>;
 				cam_vi_in4: endpoint {
-					vc-id = <2>;
-					port-index = <4>;
+					vc-id = <0>;
+					port-index = <2>;
 					bus-width = <4>;
 					remote-endpoint = <&cam_csi_out4>;
 				};
@@ -54,10 +54,37 @@
 			port@5 {
 				reg = <5>;
 				cam_vi_in5: endpoint {
-					vc-id = <3>;
+					vc-id = <0>;
 					port-index = <4>;
 					bus-width = <4>;
 					remote-endpoint = <&cam_csi_out5>;
+				};
+			};
+			port@6 {
+				reg = <6>;
+				cam_vi_in6: endpoint {
+					vc-id = <1>;
+					port-index = <4>;
+					bus-width = <4>;
+					remote-endpoint = <&cam_csi_out6>;
+				};
+			};
+			port@7 {
+				reg = <7>;
+				cam_vi_in7: endpoint {
+					vc-id = <2>;
+					port-index = <4>;
+					bus-width = <4>;
+					remote-endpoint = <&cam_csi_out7>;
+				};
+			};
+			port@8 {
+				reg = <8>;
+				cam_vi_in8: endpoint {
+					vc-id = <3>;
+					port-index = <4>;
+					bus-width = <4>;
+					remote-endpoint = <&cam_csi_out8>;
 				};
 			};
 		};
@@ -65,7 +92,7 @@
 
 	host1x@13e00000 {
 		nvcsi@15a00000 {
-			num-channels = <6>;
+			num-channels = <9>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			channel@0 {
@@ -97,7 +124,7 @@
 					port@0 {
 						reg = <0>;
 						cam_csi_in1: endpoint@2 {
-							port-index = <2>;
+							port-index = <0>;
 							bus-width = <4>;
 							remote-endpoint = <&cam_out1>;
 						};
@@ -118,7 +145,7 @@
 					port@0 {
 						reg = <0>;
 						cam_csi_in2: endpoint@4 {
-							port-index = <4>;
+							port-index = <0>;
 							bus-width = <4>;
 							remote-endpoint = <&cam_out2>;
 						};
@@ -139,7 +166,7 @@
 					port@0 {
 						reg = <0>;
 						cam_csi_in3: endpoint@6 {
-							port-index = <4>;
+							port-index = <0>;
 							bus-width = <4>;
 							remote-endpoint = <&cam_out3>;
 						};
@@ -160,7 +187,7 @@
 					port@0 {
 						reg = <0>;
 						cam_csi_in4: endpoint@8 {
-							port-index = <4>;
+							port-index = <2>;
 							bus-width = <4>;
 							remote-endpoint = <&cam_out4>;
 						};
@@ -190,6 +217,69 @@
 						reg = <1>;
 						cam_csi_out5: endpoint@11 {
 							remote-endpoint = <&cam_vi_in5>;
+						};
+					};
+				};
+			};
+			channel@6 {
+				reg = <6>;
+				ports {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					port@0 {
+						reg = <0>;
+						cam_csi_in6: endpoint@12 {
+							port-index = <4>;
+							bus-width = <4>;
+							remote-endpoint = <&cam_out6>;
+						};
+					};
+					port@1 {
+						reg = <1>;
+						cam_csi_out6: endpoint@13 {
+							remote-endpoint = <&cam_vi_in6>;
+						};
+					};
+				};
+			};
+			channel@7 {
+				reg = <7>;
+				ports {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					port@0 {
+						reg = <0>;
+						cam_csi_in7: endpoint@14 {
+							port-index = <4>;
+							bus-width = <4>;
+							remote-endpoint = <&cam_out7>;
+						};
+					};
+					port@1 {
+						reg = <1>;
+						cam_csi_out7: endpoint@15 {
+							remote-endpoint = <&cam_vi_in7>;
+						};
+					};
+				};
+			};
+			channel@8 {
+				reg = <8>;
+				ports {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					port@0 {
+						reg = <0>;
+						cam_csi_in8: endpoint@16 {
+							port-index = <4>;
+							bus-width = <4>;
+							remote-endpoint = <&cam_out8>;
+						};
+					};
+					port@1 {
+						reg = <1>;
+						cam_csi_out8: endpoint@17 {
+							remote-endpoint = <&cam_vi_in8>;
 						};
 					};
 				};
@@ -249,7 +339,7 @@
 
 		mode0 {
 			num_lanes = "4";
-			tegra_sinterface = "serial_c";
+			tegra_sinterface = "serial_a";
 			deskew_initial_enable = "false";
 			phy_mode = "DPHY";
 
@@ -278,7 +368,7 @@
 			port@0 {
 				reg = <0>;
 				cam_out1: endpoint {
-					port-index = <2>;
+					port-index = <0>;
 					bus-width = <4>;
 					remote-endpoint = <&cam_csi_in1>;
 				};
@@ -292,7 +382,7 @@
 
 		mode0 {
 			num_lanes = "4";
-			tegra_sinterface = "serial_e";
+			tegra_sinterface = "serial_a";
 			deskew_initial_enable = "false";
 			phy_mode = "DPHY";
 
@@ -321,7 +411,7 @@
 			port@0 {
 				reg = <0>;
 				cam_out2: endpoint {
-					port-index = <4>;
+					port-index = <0>;
 					bus-width = <4>;
 					remote-endpoint = <&cam_csi_in2>;
 				};
@@ -335,7 +425,7 @@
 
 		mode0 {
 			num_lanes = "4";
-			tegra_sinterface = "serial_e";
+			tegra_sinterface = "serial_a";
 			deskew_initial_enable = "false";
 			phy_mode = "DPHY";
 
@@ -364,7 +454,7 @@
 			port@0 {
 				reg = <0>;
 				cam_out3: endpoint {
-					port-index = <4>;
+					port-index = <0>;
 					bus-width = <4>;
 					remote-endpoint = <&cam_csi_in3>;
 				};
@@ -378,7 +468,7 @@
 
 		mode0 {
 			num_lanes = "4";
-			tegra_sinterface = "serial_e";
+			tegra_sinterface = "serial_c";
 			deskew_initial_enable = "false";
 			phy_mode = "DPHY";
 
@@ -407,7 +497,7 @@
 			port@0 {
 				reg = <0>;
 				cam_out4: endpoint {
-					port-index = <4>;
+					port-index = <2>;
 					bus-width = <4>;
 					remote-endpoint = <&cam_csi_in4>;
 				};
@@ -453,6 +543,135 @@
 					port-index = <4>;
 					bus-width = <4>;
 					remote-endpoint = <&cam_csi_in5>;
+				};
+			};
+		};
+	};
+	cam7: cam7@9 {
+		compatible = "adi,cam_v1";
+		/* I2C device address */
+		reg = <0x9>;
+
+		mode0 {
+			num_lanes = "4";
+			tegra_sinterface = "serial_e";
+			deskew_initial_enable = "false";
+			phy_mode = "DPHY";
+
+			active_w = "1920";
+			active_h = "1280";
+			mode_type = "yuv";
+			pixel_phase = "yuyv";
+			csi_pixel_bit_depth = "16";
+			line_length = "1920";
+			pix_clk_hz = "0"; /* Do not update */
+
+			serdes_link_freq = "750000000";
+
+			min_framerate = "1000000"; /* 2.0 fps */
+			max_framerate = "90000000"; /* 90.0 fps */
+			step_framerate = "1";
+			default_framerate = "30000000"; /* 30.0 fps */
+
+			embedded_metadata_height = "0";
+		};
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+				cam_out6: endpoint {
+					port-index = <4>;
+					bus-width = <4>;
+					remote-endpoint = <&cam_csi_in6>;
+				};
+			};
+		};
+	};
+	cam8: cam8@a {
+		compatible = "adi,cam_v1";
+		/* I2C device address */
+		reg = <0xa>;
+
+		mode0 {
+			num_lanes = "4";
+			tegra_sinterface = "serial_e";
+			deskew_initial_enable = "false";
+			phy_mode = "DPHY";
+
+			active_w = "1920";
+			active_h = "1280";
+			mode_type = "yuv";
+			pixel_phase = "yuyv";
+			csi_pixel_bit_depth = "16";
+			line_length = "1920";
+			pix_clk_hz = "0"; /* Do not update */
+
+			serdes_link_freq = "750000000";
+
+			min_framerate = "1000000"; /* 2.0 fps */
+			max_framerate = "90000000"; /* 90.0 fps */
+			step_framerate = "1";
+			default_framerate = "30000000"; /* 30.0 fps */
+
+			embedded_metadata_height = "0";
+		};
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+				cam_out7: endpoint {
+					port-index = <4>;
+					bus-width = <4>;
+					remote-endpoint = <&cam_csi_in7>;
+				};
+			};
+		};
+	};
+	cam9: cam9@b {
+		compatible = "adi,cam_v1";
+		/* I2C device address */
+		reg = <0xb>;
+
+		mode0 {
+			num_lanes = "4";
+			tegra_sinterface = "serial_e";
+			deskew_initial_enable = "false";
+			phy_mode = "DPHY";
+
+			active_w = "1920";
+			active_h = "1280";
+			mode_type = "yuv";
+			pixel_phase = "yuyv";
+			csi_pixel_bit_depth = "16";
+			line_length = "1920";
+			pix_clk_hz = "0"; /* Do not update */
+
+			serdes_link_freq = "750000000";
+
+			min_framerate = "1000000"; /* 2.0 fps */
+			max_framerate = "90000000"; /* 90.0 fps */
+			step_framerate = "1";
+			default_framerate = "30000000"; /* 30.0 fps */
+
+			embedded_metadata_height = "0";
+		};
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+				cam_out8: endpoint {
+					port-index = <4>;
+					bus-width = <4>;
+					remote-endpoint = <&cam_csi_in8>;
 				};
 			};
 		};
@@ -539,6 +758,36 @@
 					pcl_id = "v4l2_sensor";
 					devname = "cam_v1 1-0008";
 					proc-device-tree = "/proc/device-tree/i2c@c240000/cam6@8";
+				};
+			};
+			module6 {
+				badge = "cam_bottomright";
+				position = "bottomright";
+				orientation = "1";
+				drivernode0 {
+					pcl_id = "v4l2_sensor";
+					devname = "cam_v1 1-0009";
+					proc-device-tree = "/proc/device-tree/i2c@c240000/cam7@9";
+				};
+			};
+			module7 {
+				badge = "cam_frontleft";
+				position = "frontleft";
+				orientation = "1";
+				drivernode0 {
+					pcl_id = "v4l2_sensor";
+					devname = "cam_v1 1-000a";
+					proc-device-tree = "/proc/device-tree/i2c@c240000/cam8@a";
+				};
+			};
+			module8 {
+				badge = "cam_frontright";
+				position = "frontright";
+				orientation = "1";
+				drivernode0 {
+					pcl_id = "v4l2_sensor";
+					devname = "cam_v1 1-000b";
+					proc-device-tree = "/proc/device-tree/i2c@c240000/cam9@b";
 				};
 			};
 		};
