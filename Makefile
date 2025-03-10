@@ -16,6 +16,7 @@ dtb-$(BUILD_ENABLE) += tegra194-p3668-0001-gmsl522-revb-gmsl-0.dtb
 dtb-$(BUILD_ENABLE) += tegra194-p3668-0001-gmsl522-revb-gmsl-1.dtb
 dtb-$(BUILD_ENABLE) += tegra194-p3668-0001-gmsl522-revb-gmsl-3.dtb
 dtb-$(BUILD_ENABLE) += tegra194-p3668-0001-gmsl522-revb-gmsl-4.dtb
+dtb-$(BUILD_ENABLE) += tegra194-p3668-0001-gmsl522-revb-gmsl-5.dtb
 
 ifneq ($(dtb-y),)
 dtb-y := $(addprefix $(makefile-path)/,$(dtb-y))
