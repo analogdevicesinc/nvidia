@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-// Copyright (c) 2022-2024, NVIDIA CORPORATION.  All rights reserved.
+// Copyright (c) 2022-2025, NVIDIA CORPORATION.  All rights reserved.
 
 #ifndef TEGRA_CEC_H
 #define TEGRA_CEC_H
@@ -9,6 +9,7 @@
 #include <uapi/misc/tegra_cec.h>
 
 #define TEGRA_CEC_FRAME_MAX_LENGTH  16
+#define TEGRA_CEC_RX_FIFO_LENGTH    64
 
 struct tegra_cec {
 	struct device		*dev;
@@ -30,12 +31,13 @@ struct tegra_cec {
 	struct work_struct	work;
 	unsigned int		rx_wake;
 	unsigned int		tx_wake;
-	u16			rx_buffer;
 	long			tx_error;
 	u32			tx_buf[TEGRA_CEC_FRAME_MAX_LENGTH];
 	u8			tx_buf_cur;
 	u8			tx_buf_cnt;
 	struct reset_control    *reset;
+	u16			rx_fifo[TEGRA_CEC_RX_FIFO_LENGTH];
+	u16			rx_fifo_data;
 };
 
 #define TEGRA_CEC_LADDR_BROADCAST   0xF
@@ -83,6 +85,7 @@ struct tegra_cec {
 #define TEGRA_CEC_HWCTRL_RX_SNOOP	(1<<15)
 #define TEGRA_CEC_HWCTRL_RX_NAK_MODE	(1<<16)
 #define TEGRA_CEC_HWCTRL_TX_NAK_MODE	(1<<24)
+#define TEGRA_CEC_HWCTRL_AUTO_CLR_TX_EMPTY_INTR	(1<<29)
 #define TEGRA_CEC_HWCTRL_FAST_SIM_MODE	(1<<30)
 #define TEGRA_CEC_HWCTRL_TX_RX_MODE	(1<<31)
 

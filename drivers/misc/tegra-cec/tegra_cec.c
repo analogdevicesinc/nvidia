@@ -110,10 +110,16 @@ static int tegra_cec_release(struct inode *inode, struct file *file)
 
 static inline void tegra_cec_native_tx(const struct tegra_cec *cec, u32 block)
 {
-	tegra_cec_writel(block, cec->cec_base + TEGRA_CEC_TX_REGISTER);
-	tegra_cec_writel(TEGRA_CEC_INT_STAT_TX_REGISTER_EMPTY,
-		cec->cec_base + TEGRA_CEC_INT_STAT);
+	u32 tx_reg, retry;
 
+	tegra_cec_writel(block, cec->cec_base + TEGRA_CEC_TX_REGISTER);
+
+	tx_reg = tegra_cec_readl(cec->cec_base + TEGRA_CEC_TX_REGISTER);
+	retry = 10;
+	while ((tx_reg & 0x80000000) && retry--) {
+		udelay(31); // one clock cycle = 30.5us
+		tx_reg = tegra_cec_readl(cec->cec_base + TEGRA_CEC_TX_REGISTER);
+	}
 }
 
 static inline void tegra_cec_error_recovery(struct tegra_cec *cec)
@@ -213,8 +219,6 @@ static ssize_t tegra_cec_read(struct file *file, char  __user *buffer,
 	struct tegra_cec *cec = file->private_data;
 	ssize_t ret;
 
-	count = sizeof(cec->rx_buffer);
-
 	ret = wait_event_interruptible(cec->init_waitq,
 	    atomic_read(&cec->init_done) == 1);
 	if (ret)
@@ -228,13 +232,16 @@ static ssize_t tegra_cec_read(struct file *file, char  __user *buffer,
 	if (ret)
 		return ret;
 
-	if (copy_to_user(buffer, &(cec->rx_buffer), count))
+	count = sizeof(cec->rx_fifo[0]) * (cec->rx_fifo_data);
+	if (copy_to_user(buffer, &(cec->rx_fifo[0]), count))
 		return -EFAULT;
 
 	dev_dbg(cec->dev, "%s: %*phC", __func__, (int)count,
-		&(cec->rx_buffer));
-	cec->rx_buffer = 0x0;
+		&(cec->rx_fifo[0]));
+
+	memset(&(cec->rx_fifo[0]), 0, count);
 	cec->rx_wake = 0;
+	cec->rx_fifo_data = 0;
 	return count;
 }
 
@@ -242,7 +249,7 @@ static irqreturn_t tegra_cec_irq_handler(int irq, void *data)
 {
 	struct device *dev = data;
 	struct tegra_cec *cec = dev_get_drvdata(dev);
-	u32 status, mask;
+	u32 status, mask, i;
 
 	status = tegra_cec_readl(cec->cec_base + TEGRA_CEC_INT_STAT);
 	mask = tegra_cec_readl(cec->cec_base + TEGRA_CEC_INT_MASK);
@@ -314,9 +321,21 @@ static irqreturn_t tegra_cec_irq_handler(int irq, void *data)
 			TEGRA_CEC_INT_STAT_RX_BUS_ERROR_DETECTED),
 			cec->cec_base + TEGRA_CEC_INT_STAT);
 	} else if (status & TEGRA_CEC_INT_STAT_RX_REGISTER_FULL) {
+		/*
+		 Read TEGRA_CEC_RX_BUFFER_STAT_0 which have total number of blocks,
+		 then read every block continuously from TEGRA_CEC_RX_REGISTER.
+		 TEGRA_CEC_INT_STAT_RX_REGISTER_FULL sets only once and not for
+		 every block if there are more than 1 block in FIFO.
+		 */
+		cec->rx_fifo_data =
+			tegra_cec_readl(cec->cec_base + TEGRA_CEC_RX_BUFFER_STAT_0);
+		for (i = 0; i < cec->rx_fifo_data; i++) {
+			cec->rx_fifo[i] =
+				readw(cec->cec_base + TEGRA_CEC_RX_REGISTER);
+		}
+
 		tegra_cec_writel(TEGRA_CEC_INT_STAT_RX_REGISTER_FULL,
 			cec->cec_base + TEGRA_CEC_INT_STAT);
-		cec->rx_buffer = tegra_cec_readl(cec->cec_base + TEGRA_CEC_RX_REGISTER);
 		cec->rx_wake = 1;
 		wake_up_interruptible(&cec->rx_waitq);
 	}
@@ -508,8 +527,9 @@ static void tegra_cec_init(struct tegra_cec *cec)
 
 	cec->logical_addr = TEGRA_CEC_HWCTRL_RX_LADDR_UNREG;
 
-	tegra_cec_writel(TEGRA_CEC_HWCTRL_RX_LADDR(cec->logical_addr),
-		cec->cec_base + TEGRA_CEC_HW_CONTROL);
+	state = TEGRA_CEC_HWCTRL_AUTO_CLR_TX_EMPTY_INTR |
+		TEGRA_CEC_HWCTRL_RX_LADDR(cec->logical_addr);
+	tegra_cec_writel(state, cec->cec_base + TEGRA_CEC_HW_CONTROL);
 
 	tegra_cec_writel(0x1, cec->cec_base + TEGRA_CEC_MESSAGE_FILTER_CTRL);
 
