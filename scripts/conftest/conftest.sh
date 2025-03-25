@@ -6708,6 +6708,25 @@ compile_test() {
                     "NV_BLOCK_DEVICE_OPERATIONS_RELEASE_HAS_NO_MODE_ARG" "" "types"
         ;;
 
+        blk_rq_map_sg_has_no_queue_arg)
+            #
+            # Determine if blk_rq_map_sg() no longer takes a request_queue parameter.
+            #
+            # Commit 75618ac6e98f ("block: remove unused parameter 'q' parameter
+            # in __blk_rq_map_sg()") removed the 'request_queue' parameter from the
+            # function blk_rq_map_sg() in Linux v6.15.
+            #
+            CODE="
+            #include <linux/blk-mq.h>
+
+            int conftest_blk_rq_map_sg_has_no_queue_arg(struct request *rq,
+                                                        struct scatterlist *sg) {
+                return blk_rq_map_sg(rq, sg);
+            }"
+
+            compile_check_conftest "$CODE" "NV_BLK_RQ_MAP_SG_HAS_NO_QUEUE_ARG" "" "types"
+        ;;
+
         bus_type_struct_match_has_const_drv_arg)
             #
             # Determine if the 'match' callback from the 'bus_type' structure
