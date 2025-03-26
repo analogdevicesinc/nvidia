@@ -2,9 +2,9 @@
 
 ## Supported projects
 
-| Project 	| Documentation 	|
-|---------	| --------------	|
-| gmsl    	| [Here][doc-0] 	|
+| Project 	| Documentation 	| Release Tag   |
+|---------	| --------------	| ------------- |
+| gmsl    	| [Here][doc-0] 	| jetson_35.3.1 |
 
 [doc-0]: https://github.com/analogdevicesinc/nvidia/tree/gmsl/main
 
@@ -115,7 +115,15 @@ After you set up your development environment, you have multiple ways of working
 
 If you look at the branches of this repo, you will notice that there are multiple branches, which are named accordingly to each project's documentation under the [Supported projects](#supported-projects) section. The branch names also contain the paths to the repos inside the Jetson Linux tree that we have modified.
 
+### Syncing from the repos into the Jetson Linux tree
+
+To do this, run the following script (provided in this repo) specifying the path to the Jetson Linux directory, a remote name of your choice (we recomment using `adi`) and the remote url at which this repo lives. You also need to specify the `Project` and `Release Tag` values from the table in the [Supported projects](#supported-projects) section.
+
+`./sync.sh ../Linux_for_Tegra_R35.3.1 adi https://github.com/analogdevicesinc/nvidia.git gmsl jetson_35.3.1`
+
 ### Applying patches to the Jetson Linux tree
+
+> :warning: Use this method only if you have a **patches-jetson_35.3.1** archive provided by ADI or you created one following **Extracting patches from the Jetson Linux tree**
 
 Applying patches is useful if you intend to combine patches from multiple manufacturers.
 
@@ -124,14 +132,6 @@ In this way, the patches provided by us can be applied alongside the patches pro
 To do this, run the following script (provided in this repo) specifying the path to the Jetson Linux directory, and the patches directory matching the `Patches Directory` value from the table in each project's documentation under the [Supported projects](#supported-projects) section.
 
 `./apply-patches.sh ../Linux_for_Tegra_R35.3.1/ ../nvidia-gmsl/patches-jetson_35.3.1`
-
-### Syncing from the repos into the Jetson Linux tree
-
-Another way is to sync the repos. This is mostly useful for internal development.
-
-To do this, run the following script (provided in this repo) specifying the path to the Jetson Linux directory, a remote name of your choice (we recomment using `adi`) and the remote url at which this repo lives. You also need to specify the `Project` and `Release Tag` values from the table in the [Supported projects](#supported-projects) section.
-
-`./sync.sh ../Linux_for_Tegra_R35.3.1 adi https://github.com/analogdevicesinc/nvidia.git gmsl jetson_35.3.1`
 
 ### Resetting the Jetson Linux tree to NVIDIA state
 
@@ -178,6 +178,8 @@ You have to specify the full path to the script, since it is only contained in t
 `~/nvidia/build.sh`
 
 This will build the kernel, device trees and modules.
+
+The build process will create two subdirectories in `sources` folder of Jetson Linux tree. One is `kernel_out` containing the kernel `Image` and `dtbs`. The other is `modules_out` containing the linux kernel modules.
 
 ### Device trees
 
