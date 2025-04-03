@@ -84,8 +84,16 @@ static const struct fb_ops tegra_fb_ops = {
 	.fb_destroy = tegra_fbdev_fb_destroy,
 };
 
+#if defined(NV_DRM_DRIVER_HAS_FBDEV_PROBE) /* Linux v6.13 */
+static const struct drm_fb_helper_funcs tegra_fbdev_helper_funcs = {
+};
+
+int tegra_fbdev_driver_fbdev_probe(struct drm_fb_helper *helper,
+				   struct drm_fb_helper_surface_size *sizes)
+#else
 static int tegra_fbdev_probe(struct drm_fb_helper *helper,
 			     struct drm_fb_helper_surface_size *sizes)
+#endif
 {
 	struct tegra_drm *tegra = helper->dev->dev_private;
 	struct drm_device *drm = helper->dev;
@@ -134,6 +142,9 @@ static int tegra_fbdev_probe(struct drm_fb_helper *helper,
 		return PTR_ERR(fb);
 	}
 
+#if defined(NV_DRM_DRIVER_HAS_FBDEV_PROBE) /* Linux v6.13 */
+	helper->funcs = &tegra_fbdev_helper_funcs;
+#endif
 	helper->fb = fb;
 #if defined(NV_DRM_FB_HELPER_STRUCT_HAS_INFO_ARG) /* Linux v6.2 */
 	helper->info = info;
@@ -173,6 +184,7 @@ destroy:
 	return err;
 }
 
+#if !defined(NV_DRM_DRIVER_HAS_FBDEV_PROBE) /* Linux v6.13 */
 static const struct drm_fb_helper_funcs tegra_fb_helper_funcs = {
 	.fb_probe = tegra_fbdev_probe,
 };
@@ -286,3 +298,4 @@ err_drm_client_init:
 #endif
 	kfree(helper);
 }
+#endif
