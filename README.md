@@ -163,13 +163,13 @@ You'll have to connect your serializers one by one to configure them since the G
 
 Configure it to use device address 0x4e (0x27), COAX, GMSL2 and 6Gbps.
 
-This should mean `CFG0` at pin level `0` and `CFG1` at pin level `1`.
+This should mean `CFG0` at pin level `0` and `CFG1` at pin level `0`.
 
 #### MAX9295A, MAX96717
 
-Configure it to use device address 0x80 (0x40), COAX, and either Tunnel or Pixel mode. The default device tree configuration will switch it to pixel mode.
+Configure it to use device address 0x80 (0x40), COAX, 6Gbps and Pixel mode.
 
-This should mean `CFG0` at pin level `0` and `CFG1` at pin level `5` or `7`.
+This should mean `CFG0` at pin level `0` and `CFG1` at pin level `7`.
 
 ### CSI I2C
 
