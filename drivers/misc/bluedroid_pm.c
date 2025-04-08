@@ -3,8 +3,6 @@
 
 #include <nvidia/conftest.h>
 
-#include <nvidia/conftest.h>
-
 #include <linux/uaccess.h>
 #include <linux/module.h>
 #include <linux/proc_fs.h>
@@ -267,7 +265,11 @@ static ssize_t lpm_write_proc(struct file *file, const char __user *buffer,
 			bluedroid_pm_gpio_set_value(
 				bluedroid_pm->ext_wake, 1);
 			__pm_stay_awake(&bluedroid_pm->wake_lock);
+#if defined(NV_TIMER_DELETE_PRESENT) /* Linux v6.15 */
+			timer_delete(&bluedroid_pm_timer);
+#else
 			del_timer(&bluedroid_pm_timer);
+#endif
 			set_bit(BT_WAKE, &bluedroid_pm->flags);
 		} else {
 			kfree(buf);
@@ -539,7 +541,11 @@ static int bluedroid_pm_remove(struct platform_device *pdev)
 		wakeup_source_destroy(&bluedroid_pm->wake_lock);
 		gpio_free(bluedroid_pm->ext_wake);
 		remove_bt_proc_interface();
+#if defined(NV_TIMER_DELETE_PRESENT) /* Linux v6.15 */
+		timer_delete(&bluedroid_pm_timer);
+#else
 		del_timer(&bluedroid_pm_timer);
+#endif
 	}
 	if ((gpio_is_valid(bluedroid_pm->gpio_reset)) ||
 		(gpio_is_valid(bluedroid_pm->gpio_shutdown)) ||

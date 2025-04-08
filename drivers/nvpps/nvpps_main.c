@@ -449,7 +449,11 @@ static int set_mode(struct nvpps_device_data *pdev_data, u32 mode)
 				if (!pdev_data->only_timer_mode) {
 					if (pdev_data->timer_inited) {
 						pdev_data->timer_inited = false;
+#if defined(NV_TIMER_DELETE_PRESENT) /* Linux v6.15 */
+						timer_delete_sync(&pdev_data->timer);
+#else
 						del_timer_sync(&pdev_data->timer);
+#endif
 					}
 					if (!pdev_data->irq_registered) {
 						/* register IRQ handler */
@@ -1130,7 +1134,11 @@ static int nvpps_remove(struct platform_device *pdev)
 	if (pdev_data) {
 		if (pdev_data->timer_inited) {
 			pdev_data->timer_inited = false;
+#if defined(NV_TIMER_DELETE_PRESENT) /* Linux v6.15 */
+			timer_delete_sync(&pdev_data->timer);
+#else
 			del_timer_sync(&pdev_data->timer);
+#endif
 		}
 		if (pdev_data->mac_base_addr) {
 			devm_iounmap(&pdev->dev, pdev_data->mac_base_addr);
@@ -1138,7 +1146,11 @@ static int nvpps_remove(struct platform_device *pdev)
 				pdev_data->mac_base_addr);
 		}
 		if (pdev_data->support_tsc) {
+#if defined(NV_TIMER_DELETE_PRESENT) /* Linux v6.15 */
+			timer_delete_sync(&pdev_data->tsc_timer);
+#else
 			del_timer_sync(&pdev_data->tsc_timer);
+#endif
 			iounmap(pdev_data->tsc_reg_map_base);
 		}
 		device_destroy(s_nvpps_class, pdev_data->dev->devt);
