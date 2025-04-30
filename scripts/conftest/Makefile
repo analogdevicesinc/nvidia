@@ -1,6 +1,6 @@
 ###########################################################################
 # SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # Makefile file for NVIDIA Linux conftest
 ###########################################################################
@@ -193,6 +193,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += v4l2_async_subdev_nf_init
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += v4l2_async_notifier_init
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += v4l2_async_nf_init_has_v4l2_dev_arg
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += __v4l2_async_nf_add_subdev
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += v4l2_fwnode_endpoint_struct_has_v4l2_mbus_config_mipi_csi2
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += v4l2_subdev_pad_ops_struct_has_get_set_frame_interval
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += v4l2_subdev_pad_ops_struct_has_dv_timings
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
