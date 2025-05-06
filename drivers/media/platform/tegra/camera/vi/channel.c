@@ -471,6 +471,7 @@ void tegra_channel_init_ring_buffer(struct tegra_channel *chan)
 	chan->capture_descr_index = 0;
 	chan->capture_descr_sequence = 0;
 	chan->queue_error = false;
+	chan->capture_reqs_enqueued = 0;
 }
 EXPORT_SYMBOL(tegra_channel_init_ring_buffer);
 
