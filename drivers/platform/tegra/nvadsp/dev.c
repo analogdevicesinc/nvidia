@@ -25,7 +25,6 @@
 #include "dev.h"
 #include "os.h"
 #include "amc.h"
-#include "ape_actmon.h"
 #include "aram_manager.h"
 
 #include "dev-t18x.h"
