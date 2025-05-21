@@ -1,0 +1,143 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2025 Analog Devices Inc.
+ */
+
+/dts-v1/;
+
+#include "tegra194-p3668-0001-gmsl522-revb.dts"
+
+/ {
+	model = "Analog Devices AD-GMSL522-SL - GMSL GUI - 2.5Gbps - QTH 2 lanes";
+};
+
+#include "common/tegra194-gmsl522-reva-gmsl-generic.dtsi"
+
+&cam_vi_in0 {
+	bus-width = <2>;
+};
+
+&cam_vi_in1 {
+	bus-width = <2>;
+};
+
+&cam_vi_in2 {
+	bus-width = <2>;
+};
+
+&cam_vi_in3 {
+	bus-width = <2>;
+};
+
+&cam_vi_in4 {
+	bus-width = <2>;
+};
+
+&cam_csi_in0 {
+	bus-width = <2>;
+};
+
+&cam_csi_in1 {
+	bus-width = <2>;
+};
+
+&cam_csi_in2 {
+	bus-width = <2>;
+};
+
+&cam_csi_in3 {
+	bus-width = <2>;
+};
+
+&cam_csi_in4 {
+	bus-width = <2>;
+};
+
+&cam1 {
+	mode0 {
+		serdes_link_freq = "1250000000";
+	};
+	ports {
+		port@0 {
+			endpoint {
+				bus-width = <0x02>;
+			};
+		};
+	};
+};
+
+&cam2 {
+	mode0 {
+		serdes_link_freq = "1250000000";
+	};
+	ports {
+		port@0 {
+			endpoint {
+				bus-width = <0x02>;
+			};
+		};
+	};
+};
+
+&cam3 {
+	mode0 {
+		serdes_link_freq = "1250000000";
+	};
+	ports {
+		port@0 {
+			endpoint {
+				bus-width = <0x02>;
+			};
+		};
+	};
+};
+
+&cam4 {
+	mode0 {
+		serdes_link_freq = "1250000000";
+	};
+	ports {
+		port@0 {
+			endpoint {
+				bus-width = <0x02>;
+			};
+		};
+	};
+};
+
+&cam5 {
+	mode0 {
+		serdes_link_freq = "1250000000";
+	};
+	ports {
+		port@0 {
+			endpoint {
+				bus-width = <0x02>;
+			};
+		};
+	};
+};
+
+&cam6 {
+	mode0 {
+		serdes_link_freq = "1250000000";
+	};
+};
+
+&cam7 {
+	mode0 {
+		serdes_link_freq = "1250000000";
+	};
+};
+
+&cam8 {
+	mode0 {
+		serdes_link_freq = "1250000000";
+	};
+};
+
+&cam9 {
+	mode0 {
+		serdes_link_freq = "1250000000";
+	};
+};
