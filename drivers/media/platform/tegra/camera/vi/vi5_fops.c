@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES.
+/* SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES.
  * All rights reserved.
  *
  * Tegra Video Input 5 device common APIs
@@ -603,6 +603,9 @@ rel_buf:
 	vi5_release_buffer(chan, buf);
 }
 
+static void vi5_unit_get_device_handle(struct platform_device *pdev,
+			uint32_t csi_stream_id, struct device **dev);
+
 static int vi5_channel_error_recover(struct tegra_channel *chan,
 	bool queue_error)
 {
@@ -620,6 +623,25 @@ static int vi5_channel_error_recover(struct tegra_channel *chan,
 			dev_err(&chan->video->dev, "vi capture release failed\n");
 			goto done;
 		}
+
+		/* Release capture requests */
+		if (chan->request[vi_port] != NULL) {
+			dma_free_coherent(chan->tegra_vi_channel[vi_port]->rtcpu_dev,
+			chan->capture_queue_depth * sizeof(struct capture_descriptor),
+			chan->request[vi_port], chan->request_iova[vi_port]);
+		}
+		chan->request[vi_port] = NULL;
+
+		/* Release emd data buffers */
+		if (chan->emb_buf_size > 0) {
+			struct device *vi_unit_dev;
+
+			vi5_unit_get_device_handle(chan->vi->ndev, chan->port[0], &vi_unit_dev);
+			dma_free_coherent(vi_unit_dev, chan->emb_buf_size,
+				chan->emb_buf_addr, chan->emb_buf);
+				chan->emb_buf_size = 0;
+		}
+
 		vi_channel_close_ex(chan->vi_channel_id[vi_port],
 					chan->tegra_vi_channel[vi_port]);
 		chan->tegra_vi_channel[vi_port] = NULL;
