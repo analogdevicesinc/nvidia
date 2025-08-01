@@ -534,10 +534,14 @@ Here is a table with the branch you need to clone depending on your release tag.
 
 [cc-0]: https://github.com/analogdevicesinc/nvidia/tree/gmsl-userspace/jetson_35.3.1/csi-camera
 
+First, install the necessary dependencies.
+
+`sudo apt install python3-opencv`
+
 Then, move into the `csi-camera` directory.
 
 `cd csi-camera`
 
 To run the CSI Camera app using camera 0, run the following command.
 
-`python simple-camera.py 0`
+`python simple_camera.py 0`
