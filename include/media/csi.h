@@ -104,6 +104,10 @@ struct tegra_csi_channel {
 	struct v4l2_subdev subdev;
 	struct media_pad *pads;
 	struct media_pipeline pipe;
+	struct v4l2_async_notifier notifier;
+	struct v4l2_subdev *source_sd;
+	u32 source_sd_pad;
+
 	struct tegra_csi_device *csi;
 	struct tegra_csi_port *ports;
 	unsigned char port[TEGRA_CSI_BLOCKS];
@@ -120,6 +124,11 @@ struct tegra_csi_channel {
 static inline struct tegra_csi_channel *to_csi_chan(struct v4l2_subdev *subdev)
 {
 	return container_of(subdev, struct tegra_csi_channel, subdev);
+}
+
+static inline struct tegra_csi_channel *nf_to_csi_chan(struct v4l2_async_notifier *notifier)
+{
+	return container_of(notifier, struct tegra_csi_channel, notifier);
 }
 
 static inline struct tegra_csi_device *to_csi(struct v4l2_subdev *subdev)

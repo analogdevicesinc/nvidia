@@ -30,6 +30,8 @@
 #include <uapi/linux/nvhost_nvcsi_ioctl.h>
 #include "nvcsi/deskew.h"
 
+#define CSI_PAD_SINK 0
+
 #define DEFAULT_NUM_TPG_CHANNELS 6
 
 /*
@@ -763,6 +765,100 @@ int tegra_csi_init(struct tegra_csi_device *csi,
 	return err;
 }
 
+static int tegra_csi_channel_notify_bound(struct v4l2_async_notifier *notifier,
+					  struct v4l2_subdev *source_subdev,
+					  struct v4l2_async_connection *asd)
+{
+	struct tegra_csi_channel *chan = nf_to_csi_chan(notifier);
+	struct tegra_csi_device *csi = chan->csi;
+	int ret;
+
+	ret = media_entity_get_fwnode_pad(&source_subdev->entity,
+					  source_subdev->fwnode,
+					  MEDIA_PAD_FL_SOURCE);
+	if (ret < 0) {
+		dev_err(csi->dev, "Failed to find pad for %s\n",
+			source_subdev->name);
+		return ret;
+	}
+
+	chan->source_sd = source_subdev;
+	chan->source_sd_pad = ret;
+
+	ret = media_create_pad_link(&source_subdev->entity, chan->source_sd_pad,
+				    &chan->subdev.entity, CSI_PAD_SINK,
+				    MEDIA_LNK_FL_ENABLED |
+				    MEDIA_LNK_FL_IMMUTABLE);
+	if (ret) {
+		dev_err(csi->dev, "Unable to link %s:%u -> %s:0\n",
+			source_subdev->name, chan->source_sd_pad,
+			chan->subdev.name);
+		return ret;
+	}
+
+	return 0;
+}
+
+static void tegra_csi_channel_notify_unbound(struct v4l2_async_notifier *notifier,
+					     struct v4l2_subdev *subdev,
+					     struct v4l2_async_connection *asd)
+{
+	struct tegra_csi_channel *chan = nf_to_csi_chan(notifier);
+
+	chan->source_sd = NULL;
+	chan->source_sd_pad = 0;
+}
+
+static const struct v4l2_async_notifier_operations tegra_csi_channel_notify_ops = {
+	.bound = tegra_csi_channel_notify_bound,
+	.unbind = tegra_csi_channel_notify_unbound,
+};
+
+static int tegra_csi_channel_notifier_register(struct tegra_csi_channel *chan)
+{
+	struct tegra_csi_device *csi = chan->csi;
+	struct v4l2_async_connection *asd;
+	struct fwnode_handle *ep_fwnode;
+	int ret;
+
+	ep_fwnode = fwnode_graph_get_endpoint_by_id(chan->subdev.fwnode,
+						    CSI_PAD_SINK, 0, 0);
+	if (!ep_fwnode) {
+		dev_err(csi->dev, "No graph endpoint\n");
+		return -ENODEV;
+	}
+
+	v4l2_async_subdev_nf_init(&chan->notifier, &chan->subdev);
+
+	asd = v4l2_async_nf_add_fwnode_remote(&chan->notifier, ep_fwnode,
+					      struct v4l2_async_connection);
+
+	fwnode_handle_put(ep_fwnode);
+
+	if (IS_ERR(asd)) {
+		dev_err(csi->dev, "Failed to add subdev: %ld", PTR_ERR(asd));
+		v4l2_async_nf_cleanup(&chan->notifier);
+		return PTR_ERR(asd);
+	}
+
+	chan->notifier.ops = &tegra_csi_channel_notify_ops;
+
+	ret = v4l2_async_nf_register(&chan->notifier);
+	if (ret) {
+		dev_err(csi->dev, "Failed to register subdev_notifier");
+		v4l2_async_nf_cleanup(&chan->notifier);
+		return ret;
+	}
+
+	return 0;
+}
+
+static void tegra_csi_channel_notifier_unregister(struct tegra_csi_channel *chan)
+{
+	v4l2_async_nf_unregister(&chan->notifier);
+	v4l2_async_nf_cleanup(&chan->notifier);
+}
+
 static int tegra_csi_channel_init_one(struct tegra_csi_channel *chan)
 {
 	struct v4l2_subdev *sd;
@@ -856,9 +952,17 @@ static int tegra_csi_channel_init_one(struct tegra_csi_channel *chan)
 
 	if (!chan->pg_mode) {
 #if defined(CONFIG_V4L2_ASYNC)
+		ret = tegra_csi_channel_notifier_register(chan);
+		if (ret) {
+			dev_err(csi->dev, "failed to register notifier\n");
+			media_entity_cleanup(&sd->entity);
+			return ret;
+		}
+
 		ret = v4l2_async_register_subdev(sd);
 		if (ret < 0) {
 			dev_err(csi->dev, "failed to register subdev\n");
+			tegra_csi_channel_notifier_unregister(chan);
 			media_entity_cleanup(&sd->entity);
 		}
 #else
@@ -983,6 +1087,7 @@ void tpg_csi_media_controller_cleanup(struct tegra_csi_device *csi)
 		if (!item->pg_mode)
 			continue;
 		sd = &item->subdev;
+		tegra_csi_channel_notifier_unregister(item);
 		v4l2_device_unregister_subdev(sd);
 		media_entity_cleanup(&sd->entity);
 		list_del(&item->list);
@@ -1038,6 +1143,7 @@ int tegra_csi_media_controller_remove(struct tegra_csi_device *csi)
 
 	list_for_each_entry(chan, &csi->csi_chans, list) {
 		sd = &chan->subdev;
+		tegra_csi_channel_notifier_unregister(chan);
 #if defined(CONFIG_V4L2_ASYNC)
 		v4l2_async_unregister_subdev(sd);
 #endif
