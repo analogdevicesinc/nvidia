@@ -765,6 +765,38 @@ int tegra_csi_init(struct tegra_csi_device *csi,
 	return err;
 }
 
+static int tegra_csi_channel_ctrl_handler_init(struct tegra_csi_channel *chan)
+{
+	struct tegra_csi_device *csi = chan->csi;
+	int ret;
+
+	v4l2_ctrl_handler_init(&chan->ctrl_handler, 0);
+
+	ret = v4l2_ctrl_add_handler(&chan->ctrl_handler,
+				    chan->source_sd->ctrl_handler, NULL, false);
+	if (ret || chan->ctrl_handler.error) {
+		if (chan->ctrl_handler.error)
+			ret = chan->ctrl_handler.error;
+
+		dev_err(csi->dev, "Failed to add sub-device controls: %d\n", ret);
+		return 0;
+	}
+
+	ret = v4l2_ctrl_handler_setup(&chan->ctrl_handler);
+	if (ret) {
+		dev_err(csi->dev, "Failed to setup controls: %d\n", ret);
+		goto err_handler_setup;
+	}
+
+	chan->subdev.ctrl_handler = &chan->ctrl_handler;
+
+	return 0;
+
+err_handler_setup:
+	v4l2_ctrl_handler_free(&chan->ctrl_handler);
+	return ret;
+}
+
 static int tegra_csi_channel_notify_bound(struct v4l2_async_notifier *notifier,
 					  struct v4l2_subdev *source_subdev,
 					  struct v4l2_async_connection *asd)
@@ -796,7 +828,7 @@ static int tegra_csi_channel_notify_bound(struct v4l2_async_notifier *notifier,
 		return ret;
 	}
 
-	return 0;
+	return tegra_csi_channel_ctrl_handler_init(chan);
 }
 
 static void tegra_csi_channel_notify_unbound(struct v4l2_async_notifier *notifier,
