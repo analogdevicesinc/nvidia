@@ -1170,7 +1170,6 @@ static const struct v4l2_ctrl_config common_custom_ctrls[] = {
 
 static int tegra_channel_setup_controls(struct tegra_channel *chan)
 {
-	int num_sd = 0;
 	struct v4l2_subdev *sd = NULL;
 	struct tegra_mc_vi *vi = chan->vi;
 	struct v4l2_ctrl *ctrl;
@@ -1182,9 +1181,9 @@ static int tegra_channel_setup_controls(struct tegra_channel *chan)
 	v4l2_ctrl_handler_init(&chan->ctrl_handler, MAX_CID_CONTROLS);
 
 	/* Initialize the subdev and controls here at first open */
-	sd = chan->subdev[num_sd];
-	while ((sd = chan->subdev[num_sd++]) &&
-		(num_sd <= chan->num_subdevs)) {
+	for (i = 0; i < chan->num_subdevs; i++) {
+		sd = chan->subdev[i];
+
 		/* Add control handler for the subdevice */
 		ret = v4l2_ctrl_add_handler(&chan->ctrl_handler,
 					sd->ctrl_handler, NULL, false);
