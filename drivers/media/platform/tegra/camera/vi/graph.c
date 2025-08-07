@@ -440,6 +440,7 @@ void tegra_vi_graph_cleanup(struct tegra_mc_vi *vi)
 }
 EXPORT_SYMBOL(tegra_vi_graph_cleanup);
 
+#if 0
 static int tegra_vi_graph_parse_one(struct tegra_channel *chan,
 				struct device_node *node)
 {
@@ -499,6 +500,7 @@ static int tegra_vi_graph_parse_one(struct tegra_channel *chan,
 
 	return ret;
 }
+#endif
 
 int tegra_vi_tpg_graph_init(struct tegra_mc_vi *mc_vi)
 {
@@ -654,6 +656,7 @@ int tegra_vi_graph_init(struct tegra_mc_vi *vi)
 		chan->num_subdevs++;
 		chan->notifier.ops = chan->notifier.ops ? chan->notifier.ops : &vi_chan_notify_ops;
 
+#if 0
 		/* Parse and add entities on this enpoint/channel */
 		ret = tegra_vi_graph_parse_one(chan, entity->node);
 		if (ret < 0) {
@@ -665,6 +668,7 @@ int tegra_vi_graph_init(struct tegra_mc_vi *vi)
 			chan = list_next_entry(chan, list);
 			continue;
 		}
+#endif
 
 		num_subdevs = chan->num_subdevs;
 
