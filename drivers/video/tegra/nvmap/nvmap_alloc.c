@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
  *
  * Handle allocation and freeing routines for nvmap
  */
@@ -28,6 +28,7 @@
 #include <linux/libnvdimm.h>
 #endif /* NVMAP_UPSTREAM_KERNEL */
 #include "nvmap_priv.h"
+#include <linux/mm.h>
 
 bool nvmap_convert_carveout_to_iovmm;
 bool nvmap_convert_iovmm_to_carveout;
@@ -494,6 +495,8 @@ static int handle_page_alloc(struct nvmap_client *client,
 #else
 	static u8 chipid;
 #endif
+	struct mm_struct *mm = current->mm;
+	struct nvmap_handle_ref *ref;
 
 	if (!chipid) {
 #ifdef NVMAP_CONFIG_COLOR_PAGES
@@ -510,6 +513,13 @@ static int handle_page_alloc(struct nvmap_client *client,
 	pages = nvmap_altalloc(nr_page * sizeof(*pages));
 	if (!pages)
 		return -ENOMEM;
+
+	/*
+	 * Get refcount on mm_struct, so that it won't be freed until
+	 * nvmap reduces refcount after it reduces the RSS counter.
+	 */
+	if (!mmget_not_zero(mm))
+		goto page_free;
 
 	if (contiguous) {
 		struct page *page;
@@ -583,6 +593,12 @@ static int handle_page_alloc(struct nvmap_client *client,
 	}
 
 	/*
+	 * Increment the RSS counter of the allocating process by number of pages allocated.
+	 */
+	 h->anon_count = nr_page;
+	 add_mm_counter(mm, MM_ANONPAGES, nr_page);
+
+	/*
 	 * Make sure any data in the caches is cleaned out before
 	 * passing these pages to userspace. Many nvmap clients assume that
 	 * the buffers are clean as soon as they are allocated. nvmap
@@ -595,11 +611,28 @@ static int handle_page_alloc(struct nvmap_client *client,
 	h->pgalloc.pages = pages;
 	h->pgalloc.contig = contiguous;
 	atomic_set(&h->pgalloc.ndirty, 0);
+
+	nvmap_ref_lock(client);
+	ref = __nvmap_validate_locked(client, h, false);
+	if (ref) {
+		ref->mm = mm;
+		ref->anon_count = h->anon_count;
+	} else {
+		add_mm_counter(mm, MM_ANONPAGES, -nr_page);
+		mmput(mm);
+	}
+
+	nvmap_ref_unlock(client);
 	return 0;
 
 fail:
 	while (i--)
 		__free_page(pages[i]);
+
+	/* Incase of failure, release the reference on mm_struct. */
+	mmput(mm);
+
+page_free:
 	nvmap_altfree(pages, nr_page * sizeof(*pages));
 	wmb();
 	return -ENOMEM;
@@ -1072,9 +1105,18 @@ void _nvmap_handle_free(struct nvmap_handle *h)
 		h->pgalloc.pages[i] = nvmap_to_page(h->pgalloc.pages[i]);
 
 #ifdef NVMAP_CONFIG_PAGE_POOLS
-	if (!h->from_va && !h->is_subhandle)
-		page_index = nvmap_page_pool_fill_lots(&nvmap_dev->pool,
-					h->pgalloc.pages, nr_page);
+	if (!h->from_va && !h->is_subhandle) {
+		/*
+		 * When the process is exiting with kill signal pending, don't release the memory
+		 * back into page pool. So that memory would be released back to the kernel and OOM
+		 * killer would be able to actually free the memory.
+		 */
+		if (fatal_signal_pending(current) == 0 &&
+			sigismember(&current->signal->shared_pending.signal, SIGKILL) == 0) {
+			page_index = nvmap_page_pool_fill_lots(&nvmap_dev->pool,
+						h->pgalloc.pages, nr_page);
+		}
+	}
 #endif
 
 	for (i = page_index; i < nr_page; i++) {
@@ -1128,6 +1170,17 @@ void nvmap_free_handle(struct nvmap_client *client,
 
 	if (h->owner == client)
 		h->owner = NULL;
+
+	/*
+	 * When a reference is freed, decrement rss counter of the process corresponding
+	 * to this ref and do mmput so that mm_struct can be freed, if required.
+	 */
+	if (ref->mm != NULL && ref->anon_count != 0) {
+		add_mm_counter(ref->mm, MM_ANONPAGES, -ref->anon_count);
+		mmput(ref->mm);
+		ref->mm = NULL;
+		ref->anon_count = 0;
+	}
 
 	if (is_ro)
 		dma_buf_put(ref->handle->dmabuf_ro);

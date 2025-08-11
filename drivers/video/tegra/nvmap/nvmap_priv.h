@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
- * Copyright (c) 2009-2023, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2009-2025, NVIDIA CORPORATION. All rights reserved.
  *
  * GPU memory management driver for Tegra
  */
@@ -93,7 +93,7 @@ do {                                                    \
 	}                                               \
 } while (0)
 
-#define GFP_NVMAP       (GFP_KERNEL | __GFP_HIGHMEM | __GFP_NOWARN)
+#define GFP_NVMAP       (GFP_KERNEL | __GFP_HIGHMEM | __GFP_NOWARN | __GFP_ACCOUNT | __GFP_NORETRY)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 
@@ -271,6 +271,7 @@ struct nvmap_handle {
 	wait_queue_head_t waitq;
 	int numa_id;
 	u64 serial_id;
+	u64 anon_count;
 };
 
 struct nvmap_handle_info {
@@ -295,6 +296,8 @@ struct nvmap_handle_ref {
 	struct rb_node	node;
 	atomic_t	dupes;	/* number of times to free on file close */
 	bool is_ro;
+	struct mm_struct *mm;
+	u64 anon_count;
 };
 
 #if defined(NVMAP_CONFIG_PAGE_POOLS)
