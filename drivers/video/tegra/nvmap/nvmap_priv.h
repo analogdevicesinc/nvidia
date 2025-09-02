@@ -380,6 +380,9 @@ struct nvmap_vma_priv {
 	struct nvmap_handle *handle;
 	size_t		offs;
 	atomic_t	count;	/* number of processes cloning the VMA */
+	u64 map_rss_count;
+	struct mm_struct *mm;
+	struct mutex vma_lock;
 };
 
 struct nvmap_device {
