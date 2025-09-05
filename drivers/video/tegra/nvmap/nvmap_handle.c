@@ -414,7 +414,7 @@ struct nvmap_handle_ref *nvmap_duplicate_handle(struct nvmap_client *client,
 		if (!mmget_not_zero(ref->mm))
 			goto exit;
 
-		add_mm_counter(ref->mm, MM_ANONPAGES, ref->anon_count);
+		nvmap_add_mm_counter(ref->mm, MM_ANONPAGES, ref->anon_count);
 	}
 
 	if (is_ro) {
@@ -436,7 +436,7 @@ out:
 
 exit_mm:
 	if (ref->anon_count != 0 && ref->mm != NULL) {
-		add_mm_counter(ref->mm, MM_ANONPAGES, -ref->anon_count);
+		nvmap_add_mm_counter(ref->mm, MM_ANONPAGES, -ref->anon_count);
 		mmput(ref->mm);
 		ref->mm = NULL;
 		ref->anon_count = 0;

@@ -916,6 +916,16 @@ static inline struct dma_buf *nvmap_id_array_id_release(struct xarray *xarr, u32
 	return NULL;
 }
 #endif
+
+static inline void nvmap_add_mm_counter(struct mm_struct *mm, int member, long value)
+{
+#if defined(NV_MM_STRUCT_STRUCT_HAS_PERCPU_COUNTER_RSS_STAT) /* Linux v6.2 */
+	percpu_counter_add(&mm->rss_stat[member], value);
+#else
+	atomic_long_add_return(value, &mm->rss_stat.count[member]);
+#endif
+}
+
 void *nvmap_dmabuf_get_drv_data(struct dma_buf *dmabuf,
 		struct device *dev);
 bool is_nvmap_memory_available(size_t size, uint32_t heap);

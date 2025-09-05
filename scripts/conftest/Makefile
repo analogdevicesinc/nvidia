@@ -141,6 +141,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += iio_dev_opaque_has_mlock
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_map_has_gfp_arg
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += kthread_complete_and_exit
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += media_entity_remote_pad
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += mm_struct_struct_has_percpu_counter_rss_stat
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mii_bus_struct_has_read_c45
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mii_bus_struct_has_write_c45
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += netif_set_tso_max_size

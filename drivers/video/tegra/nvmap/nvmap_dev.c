@@ -291,7 +291,7 @@ static void destroy_client(struct nvmap_client *client)
 		 * to this ref and do mmput so that mm_struct can be freed, if required.
 		 */
 		if (ref->mm != NULL && ref->anon_count != 0) {
-			add_mm_counter(ref->mm, MM_ANONPAGES, -ref->anon_count);
+			nvmap_add_mm_counter(ref->mm, MM_ANONPAGES, -ref->anon_count);
 			mmput(ref->mm);
 			ref->mm = NULL;
 			ref->anon_count = 0;

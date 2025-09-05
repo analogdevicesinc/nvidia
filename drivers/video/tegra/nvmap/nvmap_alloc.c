@@ -596,7 +596,7 @@ static int handle_page_alloc(struct nvmap_client *client,
 	 * Increment the RSS counter of the allocating process by number of pages allocated.
 	 */
 	 h->anon_count = nr_page;
-	 add_mm_counter(mm, MM_ANONPAGES, nr_page);
+	 nvmap_add_mm_counter(mm, MM_ANONPAGES, nr_page);
 
 	/*
 	 * Make sure any data in the caches is cleaned out before
@@ -618,7 +618,7 @@ static int handle_page_alloc(struct nvmap_client *client,
 		ref->mm = mm;
 		ref->anon_count = h->anon_count;
 	} else {
-		add_mm_counter(mm, MM_ANONPAGES, -nr_page);
+		nvmap_add_mm_counter(mm, MM_ANONPAGES, -nr_page);
 		mmput(mm);
 	}
 
@@ -1176,7 +1176,7 @@ void nvmap_free_handle(struct nvmap_client *client,
 	 * to this ref and do mmput so that mm_struct can be freed, if required.
 	 */
 	if (ref->mm != NULL && ref->anon_count != 0) {
-		add_mm_counter(ref->mm, MM_ANONPAGES, -ref->anon_count);
+		nvmap_add_mm_counter(ref->mm, MM_ANONPAGES, -ref->anon_count);
 		mmput(ref->mm);
 		ref->mm = NULL;
 		ref->anon_count = 0;

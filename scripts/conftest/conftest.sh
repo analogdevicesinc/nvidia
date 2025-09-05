@@ -7517,6 +7517,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MII_BUS_STRUCT_HAS_WRITE_C45" "" "types"
         ;;
 
+        mm_struct_struct_has_percpu_counter_rss_stat)
+            #
+            # Determine if the 'rss_stat' member of the 'mm_struct' structure is
+            # defined with 'percpu_counter'.
+            #
+            # This change was made in Linux v6.2 by commit f1a7941243c1 ("mm:
+            # convert mm's rss stats into percpu_counter2").
+            #
+            CODE="
+            #include <linux/mm_types.h>
+            void conftest_mm_struct_struct_has_percpu_counter_rss_stat(struct mm_struct *mm) {
+                percpu_counter_add(&mm->rss_stat[0], 0);
+            }"
+
+            compile_check_conftest "$CODE" "NV_MM_STRUCT_STRUCT_HAS_PERCPU_COUNTER_RSS_STAT" "" "types"
+        ;;
+
         no_llseek)
             #
             # Determine if the function no_llseek() is present.
