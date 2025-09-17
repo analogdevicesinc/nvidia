@@ -670,6 +670,8 @@ struct ether_priv_data {
 	struct ether_xtra_stat_counters xstats;
 	/** wol configs */
 	struct ethtool_wolinfo wol;
+	/** MDIO lock for OSI function calls **/
+	struct mutex osi_mdio_lock;
 };
 
 /**
