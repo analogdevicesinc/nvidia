@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
+// SPDX-FileCopyrightText: Copyright (c) 2009-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 /*
- * Copyright (c) 2009-2025, NVIDIA CORPORATION. All rights reserved.
- *
  * Handle allocation and freeing routines for nvmap
  */
 
@@ -14,6 +13,7 @@
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/mm.h>
+#include <linux/sched/mm.h>
 #include <linux/rbtree.h>
 #include <linux/dma-buf.h>
 #include <linux/moduleparam.h>

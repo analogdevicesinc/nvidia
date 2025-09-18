@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 /*
- * Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
- *
  * Handle allocation and freeing routines for nvmap
  */
 
@@ -29,6 +28,7 @@
 #endif /* NVMAP_UPSTREAM_KERNEL */
 #include "nvmap_priv.h"
 #include <linux/mm.h>
+#include <linux/sched/mm.h>
 
 bool nvmap_convert_carveout_to_iovmm;
 bool nvmap_convert_iovmm_to_carveout;
