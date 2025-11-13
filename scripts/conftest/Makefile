@@ -215,10 +215,9 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += v4l2_subdev_pad_ops_struct_has_dv_timings
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 NV_CONFTEST_GENERIC_COMPILE_TESTS += is_export_symbol_present_drm_gem_prime_fd_to_handle
 NV_CONFTEST_GENERIC_COMPILE_TESTS += is_export_symbol_present_drm_gem_prime_handle_to_fd
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += crypto_engine_ctx_struct_removed_test
 NV_CONFTEST_MACRO_COMPILE_TESTS ?=
-NV_CONFTEST_SYMBOL_COMPILE_TESTS ?=
 NV_CONFTEST_TYPE_COMPILE_TESTS += request_struct_has_completion_data_arg
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_crypto_engine_register_aead
 
 $(eval $(call NV_GENERATE_COMPILE_TEST_HEADER,functions,$(NV_CONFTEST_FUNCTION_COMPILE_TESTS)))
 $(eval $(call NV_GENERATE_COMPILE_TEST_HEADER,generic,$(NV_CONFTEST_GENERIC_COMPILE_TESTS)))
