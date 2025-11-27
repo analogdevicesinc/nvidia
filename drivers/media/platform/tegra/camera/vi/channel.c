@@ -1019,6 +1019,7 @@ static void tegra_channel_stop_streaming(struct vb2_queue *vq)
 
 	if (vi->fops) {
 		vi->fops->vi_stop_streaming(vq);
+		atomic_set(&chan->is_streaming, DISABLE);
 		vi->fops->vi_power_off(chan);
 	}
 
