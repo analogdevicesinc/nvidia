@@ -521,6 +521,18 @@ static int handle_page_alloc(struct nvmap_client *client,
 	if (!mmget_not_zero(mm))
 		goto page_free;
 
+	/*
+	 * Increment the RSS counter of the allocating process by number of pages requested.
+	 * This is done at the beginning as we have bulk allocation calls like __alloc_pages_bulk
+	 * during which the RSS counter is not incremented, so it may result in a huge allocation
+	 * without any RSS counter increment. This can lead to OOM killer killing other processes
+	 * while huge amount of memory is allocated by current process.
+	 * Con: The current process may be chosen by OOM killer if the input number of pages is
+	 * large and allocation is not even completed.
+	 */
+	h->anon_count = nr_page;
+	nvmap_add_mm_counter(mm, MM_ANONPAGES, nr_page);
+
 	if (contiguous) {
 		struct page *page;
 		page = nvmap_alloc_pages_exact(gfp, size, true, h->numa_id);
@@ -587,7 +599,17 @@ static int handle_page_alloc(struct nvmap_client *client,
 								   true, h->numa_id);
 
 				if (!pages[i])
-					goto fail;
+					break;
+			}
+			if (i < nr_page) {
+				gfp = gfp & ~__GFP_NORETRY;
+				while (i < nr_page) {
+					pages[i] = nvmap_alloc_pages_exact(gfp, PAGE_SIZE,
+									 true, h->numa_id);
+					if (!pages[i])
+						goto fail;
+					i++;
+				}
 			}
 		} else if (page_index < nr_page) {
 			if (alloc_colored(nr_page - page_index, &pages[page_index], chipid))
@@ -596,12 +618,6 @@ static int handle_page_alloc(struct nvmap_client *client,
 		}
 		nvmap_total_page_allocs += nr_page;
 	}
-
-	/*
-	 * Increment the RSS counter of the allocating process by number of pages allocated.
-	 */
-	 h->anon_count = nr_page;
-	 nvmap_add_mm_counter(mm, MM_ANONPAGES, nr_page);
 
 	/*
 	 * Make sure any data in the caches is cleaned out before
@@ -631,10 +647,12 @@ static int handle_page_alloc(struct nvmap_client *client,
 	return 0;
 
 fail:
-	while (i--)
-		__free_page(pages[i]);
+	while (i > 0)
+		__free_page(pages[--i]);
 
-	/* Incase of failure, release the reference on mm_struct. */
+	/* Incase of failure, decrement the RSS counter and release the reference on mm_struct. */
+	h->anon_count = 0;
+	nvmap_add_mm_counter(mm, MM_ANONPAGES, -nr_page);
 	mmput(mm);
 
 page_free:
