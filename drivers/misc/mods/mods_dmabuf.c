@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
-/* SPDX-FileCopyrightText: Copyright (c) 2014-2023, NVIDIA CORPORATION.  All rights reserved. */
+/* SPDX-FileCopyrightText: Copyright (c) 2014-2025, NVIDIA CORPORATION.  All rights reserved. */
+
+#include <nvidia/conftest.h>
 
 #include <linux/dma-buf.h>
 #include <linux/module.h>
