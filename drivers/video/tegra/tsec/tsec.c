@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * Tegra TSEC Module Support
  */
@@ -260,6 +260,19 @@ int tsec_poweron(struct device *dev)
 		goto out;
 	}
 	tsec_clks_enabled = 1;
+
+	/**
+	 * Check if the tsec fw has already initialized.
+	 * This can happen if the tsec kmd is removed and inserted again.
+	 * In that case we need to take care that the initialization sequence
+	 * is not started again from kmd to avoid any false kernel side
+	 * warnings.
+	 */
+	if (tsec_readl(pdata, tsec_falcon_mailbox0_r()) == TSEC_RISCV_INIT_SUCCESS) {
+		dev_dbg(dev, "TSEC FW already initialized, skipping re-initialization\n");
+		pdata->power_on = true;
+		goto out;
+	}
 
 	tsec_deassert_reset(pdata);
 	tsec_set_cg_regs(pdata);
