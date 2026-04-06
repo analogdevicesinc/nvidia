@@ -606,7 +606,8 @@ static int imx477_set_mode(struct tegracam_device *tc_dev)
 
 	dev_dbg(tc_dev->dev, "%s:\n", __func__);
 	mode = of_get_child_by_name(tc_dev->dev->of_node, "mode0");
-	err = of_property_read_string(mode, "num_lanes", &config);
+	err = of_property_read_string(mode, "sensor_num_lanes", &config);
+	dev_info(tc_dev->dev, "imx477 number of lanes: %c\n", config[0]);
 
 	if (config[0] == '4')
 		priv->config = FOUR_LANE_CONFIG;
