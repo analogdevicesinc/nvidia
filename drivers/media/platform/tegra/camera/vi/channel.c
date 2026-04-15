@@ -1034,7 +1034,7 @@ tegra_channel_enum_frameintervals(struct file *file, void *fh,
 	struct v4l2_subdev *sd = chan->subdev_on_csi;
 	struct v4l2_subdev_frame_interval_enum fie = { };
 	struct v4l2_subdev_pad_config pad_cfg = { };
-	struct v4l2_subdev_state cfg = {.pads = &pad_cfg};
+	struct v4l2_subdev_state cfg = {.pads = &pad_cfg, .sd = sd};
 	int ret = 0;
 
 	/* Convert v4l2 pixel format (fourcc) into media bus format code */
@@ -1393,8 +1393,10 @@ int tegra_channel_init_subdevices(struct tegra_channel *chan)
 #else
 		pad = media_pad_remote_pad_first(pad);
 #endif
-		if (pad == NULL || !tegra_is_v4l2_subdev(pad->entity))
-			break;
+		if (pad == NULL || !tegra_is_v4l2_subdev(pad->entity)) {
+			index++;
+			continue;
+		}
 
 		if (num_sd >= MAX_SUBDEVICES)
 			break;
@@ -1476,7 +1478,7 @@ __tegra_channel_try_format(struct tegra_channel *chan,
 	struct v4l2_subdev_format fmt = { };
 	struct v4l2_subdev *sd = chan->subdev_on_csi;
 	struct v4l2_subdev_pad_config pad_cfg = { };
-	struct v4l2_subdev_state cfg = {.pads = &pad_cfg};
+	struct v4l2_subdev_state cfg = {.pads = &pad_cfg, .sd = sd};
 	int ret = 0;
 
 	/* Use the channel format if pixformat is not supported */
@@ -1525,7 +1527,7 @@ __tegra_channel_set_format(struct tegra_channel *chan,
 	struct v4l2_subdev_format fmt = { };
 	struct v4l2_subdev *sd = chan->subdev_on_csi;
 	struct v4l2_subdev_pad_config pad_cfg = { };
-	struct v4l2_subdev_state cfg = {.pads = &pad_cfg};
+	struct v4l2_subdev_state cfg = {.pads = &pad_cfg, .sd = sd};
 	int ret = 0;
 
 	vfmt = tegra_core_get_format_by_fourcc(chan, pix->pixelformat);
