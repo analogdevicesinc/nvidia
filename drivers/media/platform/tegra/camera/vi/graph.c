@@ -139,6 +139,16 @@ static int tegra_vi_graph_build_one(struct tegra_channel *chan,
 
 		remote = ent->entity;
 
+		if (!remote) {
+			dev_warn(chan->vi->dev,
+				"remote entity %pOF not bound, skipping\n",
+				to_of_node(link.remote_node));
+#if defined(CONFIG_V4L2_FWNODE)
+			v4l2_fwnode_put_link(&link);
+#endif
+			continue;
+		}
+
 		if (link.remote_port >= remote->num_pads) {
 			dev_err(chan->vi->dev, "invalid port number %u on %pOF\n",
 				link.remote_port, to_of_node(link.remote_node));
@@ -154,6 +164,15 @@ static int tegra_vi_graph_build_one(struct tegra_channel *chan,
 #if defined(CONFIG_V4L2_FWNODE)
 		v4l2_fwnode_put_link(&link);
 #endif
+
+		/* Skip if link already exists (e.g. created by subdev drivers) */
+		if (media_entity_find_link(local_pad, remote_pad)) {
+			dev_dbg(chan->vi->dev,
+				"link %s:%u -> %s:%u already exists, skipping\n",
+				local->name, local_pad->index,
+				remote->name, remote_pad->index);
+			continue;
+		}
 
 		/* Create the media link. */
 		dev_dbg(chan->vi->dev, "creating %s:%u -> %s:%u link\n",
