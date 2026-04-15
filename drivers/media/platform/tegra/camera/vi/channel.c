@@ -796,6 +796,45 @@ EXPORT_SYMBOL(tegra_channel_queued_buf_done);
  * -----------------------------------------------------------------------------
  */
 
+/*
+ * Enable or disable streaming on a subdev. Uses v4l2_subdev_enable_streams()
+ * which handles both .enable_streams() pad ops (upstream GMSL drivers) and
+ * legacy .s_stream() video ops (NV drivers) transparently.
+ */
+static int tegra_subdev_set_stream(struct v4l2_subdev *sd, bool on)
+{
+	unsigned int i;
+	int source_pad = -1;
+	int err;
+
+	/* Find the first SOURCE pad */
+	for (i = 0; i < sd->entity.num_pads; i++) {
+		if (sd->entity.pads[i].flags & MEDIA_PAD_FL_SOURCE) {
+			source_pad = i;
+			break;
+		}
+	}
+
+	if (source_pad < 0) {
+		/* No SOURCE pad, fall back to legacy s_stream */
+		return v4l2_subdev_call(sd, video, s_stream, on);
+	}
+
+	if (on)
+		err = v4l2_subdev_enable_streams(sd, source_pad, BIT_ULL(0));
+	else
+		err = v4l2_subdev_disable_streams(sd, source_pad, BIT_ULL(0));
+
+	/* Streams-API subdevs propagate enable/disable to their sources,
+	 * so when VI walks the chain, some subdevs are already started.
+	 * Treat -EALREADY as success.
+	 */
+	if (err == -EALREADY)
+		err = 0;
+
+	return err;
+}
+
 int tegra_channel_set_stream(struct tegra_channel *chan, bool on)
 {
 	int num_sd;
@@ -819,7 +858,7 @@ int tegra_channel_set_stream(struct tegra_channel *chan, bool on)
 				sd = chan->subdev[num_sd];
 
 				trace_tegra_channel_set_stream(sd->name, on);
-				err = v4l2_subdev_call(sd, video, s_stream, on);
+				err = tegra_subdev_set_stream(sd, on);
 				if (!ret && err < 0 && err != -ENOIOCTLCMD)
 					ret = err;
 			}
@@ -836,9 +875,8 @@ int tegra_channel_set_stream(struct tegra_channel *chan, bool on)
 						sd = chan->subdev[num_sd];
 						trace_tegra_channel_set_stream(
 							sd->name, false);
-						err = v4l2_subdev_call(sd,
-							video,
-							s_stream, false);
+						tegra_subdev_set_stream(sd,
+							false);
 					}
 				} else
 					break;
@@ -850,7 +888,7 @@ int tegra_channel_set_stream(struct tegra_channel *chan, bool on)
 			sd = chan->subdev[num_sd];
 
 			trace_tegra_channel_set_stream(sd->name, on);
-			err = v4l2_subdev_call(sd, video, s_stream, on);
+			err = tegra_subdev_set_stream(sd, on);
 			if (!ret && err < 0 && err != -ENOIOCTLCMD)
 				ret = err;
 		}
