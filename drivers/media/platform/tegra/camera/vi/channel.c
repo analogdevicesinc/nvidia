@@ -1104,28 +1104,31 @@ int tegra_channel_s_ctrl(struct v4l2_ctrl *ctrl)
 		break;
 	case TEGRA_CAMERA_CID_VI_HEIGHT_ALIGN:
 		chan->height_align = ctrl->val;
-		tegra_channel_update_format(chan, chan->format.width,
-				chan->format.height,
-				chan->format.pixelformat,
-				&chan->fmtinfo->bpp, 0);
+		if (chan->fmtinfo)
+			tegra_channel_update_format(chan, chan->format.width,
+					chan->format.height,
+					chan->format.pixelformat,
+					&chan->fmtinfo->bpp, 0);
 		break;
 	case TEGRA_CAMERA_CID_VI_SIZE_ALIGN:
 		chan->size_align = size_align_ctrl_qmenu[ctrl->val];
-		tegra_channel_update_format(chan, chan->format.width,
-				chan->format.height,
-				chan->format.pixelformat,
-				&chan->fmtinfo->bpp, 0);
+		if (chan->fmtinfo)
+			tegra_channel_update_format(chan, chan->format.width,
+					chan->format.height,
+					chan->format.pixelformat,
+					&chan->fmtinfo->bpp, 0);
 		break;
 	case TEGRA_CAMERA_CID_LOW_LATENCY:
 		chan->low_latency = ctrl->val;
 		break;
 	case TEGRA_CAMERA_CID_VI_PREFERRED_STRIDE:
 		chan->preferred_stride = ctrl->val;
-		tegra_channel_update_format(chan, chan->format.width,
-				chan->format.height,
-				chan->format.pixelformat,
-				&chan->fmtinfo->bpp,
-				chan->preferred_stride);
+		if (chan->fmtinfo)
+			tegra_channel_update_format(chan, chan->format.width,
+					chan->format.height,
+					chan->format.pixelformat,
+					&chan->fmtinfo->bpp,
+					chan->preferred_stride);
 		break;
 	default:
 		dev_err(&chan->video->dev, "%s: Invalid ctrl %u\n",
