@@ -216,12 +216,11 @@ static void deskew_setup(struct tegra_csi_channel *chan,
 {
 	int i;
 	u64 pix_clk_hz = 0;
-	u32 deskew_enable = 0;
+	u32 deskew_enable = 0; /* Known problem on Nvidia Orin. Deskew doesn't need to be explicitly enabled */
 	unsigned int csi_lane_start = 0;
 	unsigned int csi_port, csi_lanes;
 
 	pix_clk_hz = read_mipi_clk_from_dt(chan);
-	deskew_enable = 1;
 
 	if (pix_clk_hz >= CLK_HZ_FOR_DESKEW && deskew_enable) {
 		csi_port = chan->ports[0].csi_port;
