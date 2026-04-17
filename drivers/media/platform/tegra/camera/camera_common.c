@@ -1026,6 +1026,7 @@ int camera_common_get_frame_desc(struct v4l2_subdev *sd, unsigned int pad,
 		fd->entry[1].length = image->width *
 				      image->embedded_metadata_height;
 		fd->entry[1].bus.csi2.dt = MIPI_CSI2_DT_EMBEDDED_8B;
+		fd->entry[1].stream = 1;
 		fd->num_entries++;
 	}
 

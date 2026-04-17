@@ -10,6 +10,7 @@
 #include <media/tegra-v4l2-camera.h>
 #include <media/tegracam_core.h>
 #include <media/tegracam_utils.h>
+#include <media/mipi-csi2.h>
 
 static int v4l2sd_stream(struct v4l2_subdev *sd, int enable)
 {
@@ -100,6 +101,20 @@ error:
 	return err;
 }
 
+static int v4l2sd_enable_streams(struct v4l2_subdev *sd,
+				 struct v4l2_subdev_state *state,
+				 u32 pad, u64 streams_mask)
+{
+	return v4l2sd_stream(sd, 1);
+}
+
+static int v4l2sd_disable_streams(struct v4l2_subdev *sd,
+				  struct v4l2_subdev_state *state,
+				  u32 pad, u64 streams_mask)
+{
+	return v4l2sd_stream(sd, 0);
+}
+
 static int v4l2sd_g_input_status(struct v4l2_subdev *sd, u32 *status)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -132,7 +147,7 @@ static int cam_g_frame_interval(struct v4l2_subdev *sd,
 }
 
 static struct v4l2_subdev_video_ops v4l2sd_video_ops = {
-	.s_stream	= v4l2sd_stream,
+	.s_stream	= v4l2_subdev_s_stream_helper,
 	.g_input_status = v4l2sd_g_input_status,
 #if !defined(NV_V4L2_SUBDEV_PAD_OPS_STRUCT_HAS_GET_SET_FRAME_INTERVAL)
 	.g_frame_interval = cam_g_frame_interval,
@@ -144,11 +159,113 @@ static struct v4l2_subdev_core_ops v4l2sd_core_ops = {
 	.s_power	= camera_common_s_power,
 };
 
-static int v4l2sd_get_fmt(struct v4l2_subdev *sd,
-		struct v4l2_subdev_state *state,
-		struct v4l2_subdev_format *format)
+static bool tegracam_has_embedded_metadata(struct camera_common_data *s_data)
 {
-	return camera_common_g_fmt(sd, &format->format);
+	const struct sensor_properties *props = &s_data->sensor_props;
+	int i;
+
+	for (i = 0; i < props->num_modes; i++) {
+		if (props->sensor_modes[i].image_properties.embedded_metadata_height)
+			return true;
+	}
+	return false;
+}
+
+static int cam_init_state(struct v4l2_subdev *sd,
+			  struct v4l2_subdev_state *state)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	struct camera_common_data *s_data = to_camera_common_data(&client->dev);
+	bool has_emb = tegracam_has_embedded_metadata(s_data);
+	struct v4l2_subdev_route routes[2];
+	struct v4l2_subdev_krouting routing;
+	struct v4l2_mbus_framefmt fmt = { };
+	int num_routes = 0;
+	int ret;
+
+	/* Stream 0: image data */
+	memset(routes, 0, sizeof(routes));
+	routes[0].source_pad = 0;
+	routes[0].source_stream = 0;
+	routes[0].sink_pad = 0;
+	routes[0].sink_stream = 0;
+	routes[0].flags = V4L2_SUBDEV_ROUTE_FL_ACTIVE |
+			  V4L2_SUBDEV_ROUTE_FL_IMMUTABLE;
+	num_routes = 1;
+
+	/* Stream 1: embedded metadata (if any mode supports it) */
+	if (has_emb) {
+		routes[1].source_pad = 0;
+		routes[1].source_stream = 1;
+		routes[1].sink_pad = 0;
+		routes[1].sink_stream = 1;
+		routes[1].flags = V4L2_SUBDEV_ROUTE_FL_ACTIVE |
+				  V4L2_SUBDEV_ROUTE_FL_IMMUTABLE;
+		num_routes = 2;
+	}
+
+	routing.len_routes = num_routes;
+	routing.num_routes = num_routes;
+	routing.routes = routes;
+
+	/* Set default format for image stream */
+	fmt.width = s_data->def_width;
+	fmt.height = s_data->def_height;
+	fmt.code = s_data->colorfmt->code;
+	fmt.field = V4L2_FIELD_NONE;
+	fmt.colorspace = V4L2_COLORSPACE_SRGB;
+
+	ret = v4l2_subdev_set_routing_with_fmt(sd, state, &routing, &fmt);
+	if (ret)
+		return ret;
+
+	/* Override format for embedded metadata stream */
+	if (has_emb) {
+		const struct sensor_properties *props = &s_data->sensor_props;
+		struct sensor_image_properties *image =
+			&props->sensor_modes[s_data->mode_prop_idx].image_properties;
+		struct v4l2_mbus_framefmt *emb_fmt;
+
+		emb_fmt = v4l2_subdev_state_get_format(state, 0, 1);
+		if (emb_fmt) {
+			emb_fmt->width = image->width;
+			emb_fmt->height = image->embedded_metadata_height;
+			emb_fmt->code = MEDIA_BUS_FMT_META_8;
+			emb_fmt->field = V4L2_FIELD_NONE;
+			emb_fmt->colorspace = 0;
+		}
+	}
+
+	return 0;
+}
+
+static int cam_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	struct camera_common_data *s_data = to_camera_common_data(&client->dev);
+	struct tegracam_device *tc_dev = to_tegracam_device(s_data);
+
+	/* Call through to sensor-specific open if provided */
+	if (tc_dev->v4l2sd_internal_ops && tc_dev->v4l2sd_internal_ops->open)
+		return tc_dev->v4l2sd_internal_ops->open(sd, fh);
+
+	return 0;
+}
+
+static const struct v4l2_subdev_internal_ops tegracam_internal_ops = {
+	.init_state = cam_init_state,
+	.open = cam_open,
+};
+
+static int cam_set_routing(struct v4l2_subdev *sd,
+			   struct v4l2_subdev_state *state,
+			   enum v4l2_subdev_format_whence which,
+			   struct v4l2_subdev_krouting *routing)
+{
+	if (routing->num_routes > V4L2_FRAME_DESC_ENTRY_MAX)
+		return -E2BIG;
+
+	return v4l2_subdev_set_routing(sd, state, routing);
 }
 
 static int v4l2sd_set_fmt(struct v4l2_subdev *sd,
@@ -189,12 +306,15 @@ static struct v4l2_subdev_pad_ops v4l2sd_pad_ops = {
 	.set_frame_interval = cam_g_frame_interval,
 #endif
 	.set_fmt = v4l2sd_set_fmt,
-	.get_fmt = v4l2sd_get_fmt,
+	.get_fmt = v4l2_subdev_get_fmt,
 	.enum_mbus_code = camera_common_enum_mbus_code,
 	.enum_frame_size	= camera_common_enum_framesizes,
 	.enum_frame_interval	= camera_common_enum_frameintervals,
 	.get_mbus_config	= camera_common_get_mbus_config,
 	.get_frame_desc		= camera_common_get_frame_desc,
+	.set_routing		= cam_set_routing,
+	.enable_streams		= v4l2sd_enable_streams,
+	.disable_streams	= v4l2sd_disable_streams,
 };
 
 static struct v4l2_subdev_ops v4l2sd_ops = {
@@ -243,9 +363,10 @@ int tegracam_v4l2subdev_register(struct tegracam_device *tc_dev,
 	s_data->numctrls = tc_dev->numctrls;
 	sd->ctrl_handler = s_data->ctrl_handler = &ctrl_hdl->ctrl_handler;
 	s_data->ctrls = ctrl_hdl->ctrls;
-	sd->internal_ops = tc_dev->v4l2sd_internal_ops;
+	sd->internal_ops = &tegracam_internal_ops;
 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
-			V4L2_SUBDEV_FL_HAS_EVENTS;
+			V4L2_SUBDEV_FL_HAS_EVENTS |
+			V4L2_SUBDEV_FL_STREAMS;
 	s_data->owner = sd->owner;
 	/* Set owner to NULL so we can unload the driver module */
 	sd->owner = NULL;
@@ -261,11 +382,31 @@ int tegracam_v4l2subdev_register(struct tegracam_device *tc_dev,
 	}
 #endif
 
+	err = v4l2_subdev_init_finalize(sd);
+	if (err) {
+		dev_err(dev, "subdev init finalize failed\n");
+		goto err_entity_cleanup;
+	}
+
 #if defined(CONFIG_V4L2_ASYNC)
-	return v4l2_async_register_subdev(sd);
+	err = v4l2_async_register_subdev(sd);
+	if (err) {
+		dev_err(dev, "async register subdev failed\n");
+		goto err_subdev_cleanup;
+	}
+	return 0;
+
+err_subdev_cleanup:
+	v4l2_subdev_cleanup(sd);
 #else
-	return -ENOTSUPP;
+	err = -ENOTSUPP;
+	v4l2_subdev_cleanup(sd);
 #endif
+err_entity_cleanup:
+#if IS_ENABLED(CONFIG_MEDIA_CONTROLLER)
+	media_entity_cleanup(&sd->entity);
+#endif
+	return err;
 }
 EXPORT_SYMBOL_GPL(tegracam_v4l2subdev_register);
 
@@ -279,6 +420,7 @@ void tegracam_v4l2subdev_unregister(struct tegracam_device *tc_dev)
 
 	sd = &s_data->subdev;
 
+	v4l2_subdev_cleanup(sd);
 	v4l2_ctrl_handler_free(s_data->ctrl_handler);
 #if defined(CONFIG_V4L2_ASYNC)
 	v4l2_async_unregister_subdev(sd);

@@ -805,7 +805,7 @@ static int tegra_csi_channel_notify_bound(struct v4l2_async_notifier *notifier,
 	int ret;
 
 	ret = media_entity_get_fwnode_pad(&source_subdev->entity,
-					  source_subdev->fwnode,
+					  asd->match.fwnode,
 					  MEDIA_PAD_FL_SOURCE);
 	if (ret < 0) {
 		dev_err(csi->dev, "Failed to find pad for %s\n",
