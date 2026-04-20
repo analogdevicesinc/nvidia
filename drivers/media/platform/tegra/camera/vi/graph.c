@@ -306,43 +306,51 @@ static void tegra_vi_graph_remove_links(struct tegra_channel *chan)
 	tegra_channel_remove_subdevices(chan);
 }
 
-static int tegra_vi_graph_notify_complete(struct v4l2_async_notifier *notifier)
+static int tegra_vi_channel_setup_complete(struct tegra_channel *chan)
 {
-	struct tegra_channel *chan =
-		container_of(notifier, struct tegra_channel, notifier);
 	struct tegra_vi_graph_entity *entity;
 	int ret;
-
-	dev_dbg(chan->vi->dev, "notify complete, all subdevs registered\n");
 
 	/* Allocate video_device */
 	ret = tegra_channel_init_video(chan);
 	if (ret < 0) {
-		dev_err(chan->vi->dev, "failed to allocate video device %s\n",
-			chan->video->name);
+		dev_err(chan->vi->dev,
+			"chan %d: failed to allocate video device\n",
+			chan->id);
 		return ret;
 	}
 
 	ret = video_register_device(chan->video, VFL_TYPE_VIDEO, -1);
 	if (ret < 0) {
-		dev_err(chan->vi->dev, "failed to register %s\n",
-			chan->video->name);
+		dev_err(chan->vi->dev, "chan %d: failed to register %s\n",
+			chan->id, chan->video->name);
 		goto register_device_error;
 	}
+
+	dev_dbg(chan->vi->dev, "chan %d: video device registered as %s\n",
+		chan->id, video_device_node_name(chan->video));
 
 	/* Create links for every entity. */
 	list_for_each_entry(entity, &chan->entities, list) {
 		if (entity->entity != NULL) {
 			ret = tegra_vi_graph_build_one(chan, entity);
-			if (ret < 0)
+			if (ret < 0) {
+				dev_err(chan->vi->dev,
+					"chan %d: build_one failed: %d\n",
+					chan->id, ret);
 				goto graph_error;
+			}
 		}
 	}
 
 	/* Create links for channels */
 	ret = tegra_vi_graph_build_links(chan);
-	if (ret < 0)
+	if (ret < 0) {
+		dev_err(chan->vi->dev,
+			"chan %d: build_links failed: %d\n",
+			chan->id, ret);
 		goto graph_error;
+	}
 
 	ret = v4l2_device_register_subdev_nodes(&chan->vi->v4l2_dev);
 	if (ret < 0) {
@@ -352,6 +360,9 @@ static int tegra_vi_graph_notify_complete(struct v4l2_async_notifier *notifier)
 
 	chan->link_status++;
 
+	dev_dbg(chan->vi->dev, "chan %d: graph complete, link_status %d\n",
+		chan->id, chan->link_status);
+
 	return 0;
 
 graph_error:
@@ -360,6 +371,56 @@ register_device_error:
 	video_device_release(chan->video);
 
 	return ret;
+}
+
+static bool tegra_vi_channel_all_entities_bound(struct tegra_channel *chan)
+{
+	struct tegra_vi_graph_entity *entity;
+
+	list_for_each_entry(entity, &chan->entities, list) {
+		if (!entity->subdev)
+			return false;
+	}
+	return true;
+}
+
+static int tegra_vi_graph_notify_complete(struct v4l2_async_notifier *notifier)
+{
+	struct tegra_channel *chan =
+		container_of(notifier, struct tegra_channel, notifier);
+	struct tegra_mc_vi *vi = chan->vi;
+	struct tegra_channel *sibling;
+	int ret;
+
+	dev_dbg(vi->dev, "notify complete, chan id %d\n", chan->id);
+
+	ret = tegra_vi_channel_setup_complete(chan);
+	if (ret)
+		return ret;
+
+	/* Complete sibling channels sharing a subdev whose async parent
+	 * chain doesn't reach their notifier.
+	 */
+	list_for_each_entry(sibling, &vi->vi_chans, list) {
+		if (sibling == chan)
+			continue;
+		if (sibling->link_status > 0)
+			continue;
+		if (!tegra_vi_channel_all_entities_bound(sibling))
+			continue;
+
+		dev_dbg(vi->dev,
+			"completing sibling chan %d (shared subdev workaround)\n",
+			sibling->id);
+
+		ret = tegra_vi_channel_setup_complete(sibling);
+		if (ret)
+			dev_warn(vi->dev,
+				"sibling chan %d completion failed: %d\n",
+				sibling->id, ret);
+	}
+
+	return 0;
 }
 
 #if defined(NV_V4L2_ASYNC_CONNECTION_STRUCT_PRESENT) /* Linux 6.5 */
