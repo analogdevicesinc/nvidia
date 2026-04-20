@@ -796,22 +796,49 @@ EXPORT_SYMBOL(tegra_channel_queued_buf_done);
  * -----------------------------------------------------------------------------
  */
 
-/*
- * Enable or disable streaming on a subdev. Uses v4l2_subdev_enable_streams()
- * which handles both .enable_streams() pad ops (upstream GMSL drivers) and
- * legacy .s_stream() video ops (NV drivers) transparently.
- */
-static int tegra_subdev_set_stream(struct v4l2_subdev *sd, bool on)
+static int tegra_subdev_set_stream(struct tegra_channel *chan,
+				   struct v4l2_subdev *sd, bool on)
 {
 	unsigned int i;
 	int source_pad = -1;
+	u64 streams_mask = BIT_ULL(0);
 	int err;
 
-	/* Find the first SOURCE pad */
-	for (i = 0; i < sd->entity.num_pads; i++) {
-		if (sd->entity.pads[i].flags & MEDIA_PAD_FL_SOURCE) {
-			source_pad = i;
-			break;
+	/* For streams-aware subdevs, derive source_pad from routing */
+	if (sd->flags & V4L2_SUBDEV_FL_STREAMS) {
+		struct v4l2_subdev_state *state;
+
+		state = v4l2_subdev_lock_and_get_active_state(sd);
+		if (state) {
+			struct v4l2_subdev_krouting *routing = &state->routing;
+			u64 mask = 0;
+			unsigned int j;
+
+			for (j = 0; j < routing->num_routes; j++) {
+				struct v4l2_subdev_route *route =
+					&routing->routes[j];
+
+				if (route->sink_pad == chan->virtual_channel &&
+				    (route->flags &
+				     V4L2_SUBDEV_ROUTE_FL_ACTIVE)) {
+					source_pad = route->source_pad;
+					mask |= BIT_ULL(route->source_stream);
+				}
+			}
+			v4l2_subdev_unlock_state(state);
+
+			if (mask)
+				streams_mask = mask;
+		}
+	}
+
+	if (source_pad < 0) {
+		/* Find the first SOURCE pad */
+		for (i = 0; i < sd->entity.num_pads; i++) {
+			if (sd->entity.pads[i].flags & MEDIA_PAD_FL_SOURCE) {
+				source_pad = i;
+				break;
+			}
 		}
 	}
 
@@ -821,9 +848,9 @@ static int tegra_subdev_set_stream(struct v4l2_subdev *sd, bool on)
 	}
 
 	if (on)
-		err = v4l2_subdev_enable_streams(sd, source_pad, BIT_ULL(0));
+		err = v4l2_subdev_enable_streams(sd, source_pad, streams_mask);
 	else
-		err = v4l2_subdev_disable_streams(sd, source_pad, BIT_ULL(0));
+		err = v4l2_subdev_disable_streams(sd, source_pad, streams_mask);
 
 	/* Streams-API subdevs propagate enable/disable to their sources,
 	 * so when VI walks the chain, some subdevs are already started.
@@ -858,7 +885,7 @@ int tegra_channel_set_stream(struct tegra_channel *chan, bool on)
 				sd = chan->subdev[num_sd];
 
 				trace_tegra_channel_set_stream(sd->name, on);
-				err = tegra_subdev_set_stream(sd, on);
+				err = tegra_subdev_set_stream(chan, sd, on);
 				if (!ret && err < 0 && err != -ENOIOCTLCMD)
 					ret = err;
 			}
@@ -875,8 +902,8 @@ int tegra_channel_set_stream(struct tegra_channel *chan, bool on)
 						sd = chan->subdev[num_sd];
 						trace_tegra_channel_set_stream(
 							sd->name, false);
-						tegra_subdev_set_stream(sd,
-							false);
+						tegra_subdev_set_stream(chan,
+							sd, false);
 					}
 				} else
 					break;
@@ -888,7 +915,7 @@ int tegra_channel_set_stream(struct tegra_channel *chan, bool on)
 			sd = chan->subdev[num_sd];
 
 			trace_tegra_channel_set_stream(sd->name, on);
-			err = tegra_subdev_set_stream(sd, on);
+			err = tegra_subdev_set_stream(chan, sd, on);
 			if (!ret && err < 0 && err != -ENOIOCTLCMD)
 				ret = err;
 		}
