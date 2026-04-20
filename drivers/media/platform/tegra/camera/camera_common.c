@@ -7,6 +7,7 @@
 #include <media/tegra-v4l2-camera.h>
 #include <media/camera_common.h>
 #include <media/mc_common.h>
+#include <media/mipi-csi2.h>
 #include <linux/of_graph.h>
 #include <linux/string.h>
 #include <soc/tegra/pmc.h>
@@ -1004,6 +1005,33 @@ int camera_common_get_mbus_config(struct v4l2_subdev *sd,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(camera_common_get_mbus_config);
+
+int camera_common_get_frame_desc(struct v4l2_subdev *sd, unsigned int pad,
+				 struct v4l2_mbus_frame_desc *fd)
+{
+	struct camera_common_data *s_data = to_camera_common_data(sd->dev);
+	const struct sensor_properties *props = &s_data->sensor_props;
+	struct sensor_image_properties *image;
+	u32 mode_idx = s_data->mode_prop_idx;
+
+	image = &props->sensor_modes[mode_idx].image_properties;
+
+	fd->type = V4L2_MBUS_FRAME_DESC_TYPE_CSI2;
+
+	fd->entry[0].pixelcode = s_data->colorfmt->code;
+	fd->num_entries++;
+
+	if (image->embedded_metadata_height) {
+		fd->entry[1].pixelcode = MEDIA_BUS_FMT_META_8;
+		fd->entry[1].length = image->width *
+				      image->embedded_metadata_height;
+		fd->entry[1].bus.csi2.dt = MIPI_CSI2_DT_EMBEDDED_8B;
+		fd->num_entries++;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(camera_common_get_frame_desc);
 
 int camera_common_get_framesync(struct v4l2_subdev *sd,
 			struct camera_common_framesync *fs)

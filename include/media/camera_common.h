@@ -339,6 +339,8 @@ void camera_common_dpd_enable(struct camera_common_data *s_data);
 int camera_common_get_mbus_config(struct v4l2_subdev *sd,
 			      unsigned int pad,
 			      struct v4l2_mbus_config *cfg);
+int camera_common_get_frame_desc(struct v4l2_subdev *sd, unsigned int pad,
+				 struct v4l2_mbus_frame_desc *fd);
 int camera_common_get_framesync(struct v4l2_subdev *sd,
 		struct camera_common_framesync *vshs);
 

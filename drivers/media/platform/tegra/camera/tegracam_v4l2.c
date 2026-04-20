@@ -194,6 +194,7 @@ static struct v4l2_subdev_pad_ops v4l2sd_pad_ops = {
 	.enum_frame_size	= camera_common_enum_framesizes,
 	.enum_frame_interval	= camera_common_enum_frameintervals,
 	.get_mbus_config	= camera_common_get_mbus_config,
+	.get_frame_desc		= camera_common_get_frame_desc,
 };
 
 static struct v4l2_subdev_ops v4l2sd_ops = {
