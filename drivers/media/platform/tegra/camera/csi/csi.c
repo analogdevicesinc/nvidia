@@ -46,6 +46,7 @@ struct tegra_csi_device *tegra_get_mc_csi(void)
 }
 EXPORT_SYMBOL(tegra_get_mc_csi);
 
+#if 0
 static int set_csi_properties(struct tegra_csi_device *csi,
 			struct platform_device *pdev)
 {
@@ -62,6 +63,7 @@ static int set_csi_properties(struct tegra_csi_device *csi,
 
 	return 0;
 }
+#endif
 
 static void update_blank_intervals(struct tegra_csi_channel *chan,
 		int portnum, int fmtindex)
@@ -90,6 +92,7 @@ read_mode_from_dt(struct camera_common_data *s_data)
 	return mode;
 }
 
+#if 0
 u32 read_settle_time_from_dt(struct tegra_csi_channel *chan)
 {
 	struct camera_common_data *s_data = chan->s_data;
@@ -119,6 +122,7 @@ u32 read_settle_time_from_dt(struct tegra_csi_channel *chan)
 
 	return cil_settletime;
 }
+#endif
 
 u32 read_phy_mode_from_dt(struct tegra_csi_channel *chan)
 {
@@ -155,6 +159,7 @@ u64 read_mipi_clk_from_dt(struct tegra_csi_channel *chan)
 	return mipi_clk;
 }
 
+#if 0
 void set_csi_portinfo(struct tegra_csi_device *csi,
 	unsigned int port, unsigned int numlanes)
 {
@@ -165,6 +170,7 @@ void set_csi_portinfo(struct tegra_csi_device *csi,
 	s_data->def_clk_freq = TEGRA_CLOCK_CSI_PORT_MAX;
 }
 EXPORT_SYMBOL(set_csi_portinfo);
+#endif
 
 int tegra_csi_power(struct tegra_csi_device *csi,
 			struct tegra_csi_channel *chan, int enable)
@@ -844,9 +850,12 @@ int tegra_csi_init(struct tegra_csi_device *csi,
 	struct nvhost_device_data *pdata = platform_get_drvdata(pdev);
 
 	csi->dev = &pdev->dev;
+
+#if 0
 	err = set_csi_properties(csi, pdev);
 	if (err)
 		return err;
+#endif
 
 	csi->iomem_base = pdata->aperture[0];
 	csi->fops->hw_init(csi);
@@ -1083,6 +1092,7 @@ void tpg_csi_media_controller_cleanup(struct tegra_csi_device *csi)
 }
 EXPORT_SYMBOL(tpg_csi_media_controller_cleanup);
 
+#if 0
 int tegra_csi_mipi_calibrate(struct tegra_csi_device *csi,
 				bool on)
 {
@@ -1115,6 +1125,7 @@ int tegra_csi_mipi_calibrate(struct tegra_csi_device *csi,
 
 	return 0;
 }
+#endif
 
 int tegra_csi_media_controller_init(struct tegra_csi_device *csi,
 				    struct platform_device *pdev)

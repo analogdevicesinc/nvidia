@@ -284,7 +284,11 @@ static int csi5_stream_set_config(struct tegra_csi_channel *chan, u32 stream_id,
 	if (s_data && !chan->pg_mode)
 		cil_config.mipi_clock_rate = read_mipi_clk_from_dt(chan) / 1000;
 	else
+#if 0
 		cil_config.mipi_clock_rate = csi->clk_freq / 1000;
+#else
+		cil_config.mipi_clock_rate = TEGRA_CLOCK_CSI_PORT_MAX / 1000;
+#endif
 
 	memset(&err_config, 0, sizeof(err_config));
 	/* Set NVCSI stream config */
