@@ -11,6 +11,7 @@
 #include <linux/miscdevice.h>
 #include <linux/clk.h>
 #include <linux/of.h>
+#include <linux/sysfs.h>
 #include <linux/platform/tegra/bwmgr_mc.h>
 #include <linux/platform/tegra/latency_allowance.h>
 #include <linux/platform/tegra/isomgr.h>
@@ -28,6 +29,12 @@
 
 #define LANE_SPEED_1_GBPS 1000000000
 #define LANE_SPEED_1_5_GBPS 1500000000
+
+struct tegra_np_path_attr {
+	struct bin_attribute attr;
+	struct kobject *kobj;
+	const char *path;
+};
 
 struct tegra_camera_info {
 	char devname[64];
@@ -60,6 +67,9 @@ struct tegra_camera_info {
 	bool pg_mode;
 	struct list_head device_list;
 	struct mutex device_list_mutex;
+
+	struct tegra_np_path_attr *np_path_attrs;
+	unsigned int num_np_path_attrs;
 };
 
 static const struct of_device_id tegra_camera_of_ids[] = {
@@ -349,6 +359,158 @@ static bool is_isomgr_up(struct device *dev)
 	return true;
 }
 
+static bool tegra_is_np_module(struct device_node *np) {
+	int idx;
+
+	return sscanf(np->name, "module%d", &idx) == 1;
+}
+
+static bool tegra_is_np_drivernode(struct device_node *np) {
+	int idx;
+
+	return sscanf(np->name, "drivernode%d", &idx) == 1;
+}
+
+static ssize_t tegra_np_path_read(struct file *filp, struct kobject *kobj,
+				  struct bin_attribute *bin_attr, char *buf,
+				  loff_t offset, size_t count)
+{
+	struct tegra_np_path_attr *np_attr =
+		container_of(bin_attr, struct tegra_np_path_attr, attr);
+
+	return memory_read_from_buffer(buf, count, &offset, np_attr->path, bin_attr->size);
+}
+
+static int tegra_camera_create_drivernode_prop(struct tegra_camera_info *info,
+					       struct tegra_np_path_attr *np_attr,
+					       struct device_node *drivernode_np)
+{
+	const char *target_name = "sysfs-device-tree-target";
+	const char *path_name = "sysfs-device-tree";
+	const char *sysfs_prefix = "/sys";
+	struct device_node *cam_np;
+	char *cam_path, *path;
+	size_t path_size;
+
+	cam_np = of_parse_phandle(drivernode_np, target_name, 0);
+	if (!cam_np) {
+		dev_info(info->dev, "%s: %s: prop not found: %s\n",
+			 __func__, drivernode_np->name, target_name);
+		return 0;
+	}
+
+	cam_path = kobject_get_path(&cam_np->kobj, GFP_KERNEL);
+	of_node_put(cam_np);
+	if (!cam_path) {
+		dev_info(info->dev, "%s: %s: failed to get camera path\n",
+			 __func__, drivernode_np->name);
+		return 0;
+	}
+
+	path_size = strlen(sysfs_prefix) + strlen(cam_path) + 1;
+
+	path = kzalloc(path_size, GFP_KERNEL);
+	if (!path) {
+		dev_info(info->dev, "%s: %s: failed to allocate path\n",
+			 __func__, drivernode_np->name);
+		kfree(cam_path);
+		return 0;
+	}
+
+	snprintf(path, path_size, "%s%s", sysfs_prefix, cam_path);
+	kfree(cam_path);
+
+	sysfs_bin_attr_init(&np_attr->attr);
+	np_attr->attr.attr.name = path_name;
+	np_attr->attr.attr.mode = 0444;
+	np_attr->attr.size = path_size;
+	np_attr->attr.read = tegra_np_path_read;
+
+	np_attr->path = path;
+	np_attr->kobj = &drivernode_np->kobj;
+	kobject_get(np_attr->kobj);
+
+	return sysfs_create_bin_file(np_attr->kobj, &np_attr->attr);
+}
+
+static int tegra_camera_create_sysfs(struct tegra_camera_info *info,
+				     struct device_node *np)
+{
+	const char *modules_node_name = "modules";
+	struct device_node *modules_np;
+	unsigned int num_modules = 0;
+	unsigned int i = 0;
+	int ret;
+
+	modules_np = of_get_child_by_name(np, modules_node_name);
+	if (!modules_np) {
+		dev_err(info->dev, "%s: failed to find: %s\n",
+			__func__, modules_node_name);
+		return 0;
+	}
+
+	for_each_child_of_node_scoped(modules_np, module_np) {
+		if (!tegra_is_np_module(module_np)) {
+			dev_err(info->dev, "%s: skipping: %s\n",
+				__func__, module_np->name);
+			continue;
+		}
+
+		for_each_child_of_node_scoped(module_np, drivernode_np) {
+			if (!tegra_is_np_drivernode(drivernode_np)) {
+				dev_err(info->dev, "%s: skipping: %s\n",
+					__func__, drivernode_np->name);
+				continue;
+			}
+
+			num_modules++;
+		}
+	}
+
+	info->np_path_attrs = devm_kcalloc(info->dev, num_modules,
+					   sizeof(*info->np_path_attrs), GFP_KERNEL);
+	if (!info->np_path_attrs)
+		return -ENOMEM;
+
+	for_each_child_of_node_scoped(modules_np, module_np) {
+		if (!tegra_is_np_module(module_np))
+			continue;
+
+		for_each_child_of_node_scoped(module_np, drivernode_np) {
+			struct tegra_np_path_attr *np_attr = &info->np_path_attrs[i];
+
+			if (!tegra_is_np_drivernode(drivernode_np))
+				continue;
+
+			ret = tegra_camera_create_drivernode_prop(info, np_attr, drivernode_np);
+			if (ret) {
+				dev_err(info->dev, "%s: %s: failed to create props: %s\n",
+					__func__, module_np->name, drivernode_np->name);
+				continue;
+			}
+
+			i++;
+		}
+	}
+
+	info->num_np_path_attrs = i;
+
+	return 0;
+}
+
+static void tegra_camera_destroy_sysfs(struct tegra_camera_info *info)
+{
+	unsigned int i;
+
+	for (i = 0; i < info->num_np_path_attrs; i++) {
+		struct tegra_np_path_attr *np_attr = &info->np_path_attrs[i];
+
+		sysfs_remove_bin_file(np_attr->kobj, &np_attr->attr);
+		kobject_put(np_attr->kobj);
+		kfree(np_attr->path);
+	}
+}
+
 static int tegra_camera_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -384,6 +546,13 @@ static int tegra_camera_probe(struct platform_device *pdev)
 
 	strcpy(info->devname, tegra_camera_misc.name);
 	info->dev = tegra_camera_misc.this_device;
+
+	ret = tegra_camera_create_sysfs(info, pdev->dev.of_node);
+	if (ret) {
+		dev_err(info->dev,
+			"%s: failed to create sysfs entries\n", __func__);
+		return ret;
+	}
 
 	mutex_init(&info->update_bw_lock);
 	/* Register Camera as isomgr client. */
@@ -788,6 +957,7 @@ static int tegra_camera_remove(struct platform_device *pdev)
 		tegra_camera_isomgr_request(info, 0, info->memory_latency);
 
 	tegra_camera_isomgr_unregister(info);
+	tegra_camera_destroy_sysfs(info);
 	misc_deregister(&tegra_camera_misc);
 
 	return 0;
