@@ -1249,133 +1249,34 @@ error:
 
 
 
-static int map_to_sensor_type(u32 phy_mode)
-{
-	switch (phy_mode) {
-	case CSI_PHY_MODE_DPHY:
-		return SENSORTYPE_DPHY;
-	case CSI_PHY_MODE_CPHY:
-		return SENSORTYPE_CPHY;
-	case SLVS_EC:
-		return SENSORTYPE_SLVSEC;
-	default:
-		return SENSORTYPE_OTHER;
-	}
-}
-
-static void tegra_channel_get_sensor_peak_vals(struct tegra_channel *chan,
-						u64 *pixelclock, u32 *num_lanes)
-{
-	int i = 0;
-	u64 val = 0;
-
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-	struct camera_common_data *s_data =
-		to_camera_common_data(sd->dev);
-	struct sensor_mode_properties *sensor_mode;
-
-	if (!s_data)
-		return;
-
-	for (i = 0; i < s_data->sensor_props.num_modes; i++) {
-		sensor_mode = &s_data->sensor_props.sensor_modes[i];
-		if (sensor_mode->signal_properties.serdes_pixel_clock.val != 0ULL)
-			val = sensor_mode->signal_properties.serdes_pixel_clock.val;
-		else
-			val = sensor_mode->signal_properties.pixel_clock.val;
-
-		/* Select the value from the mode with largest pixel rate and lane numbers */
-		if (*pixelclock < val)
-			*pixelclock = val;
-
-		if (*num_lanes < sensor_mode->signal_properties.num_lanes)
-			*num_lanes = sensor_mode->signal_properties.num_lanes;
-	}
-	spec_bar();
-}
-
-
-static u32 tegra_channel_get_num_lanes(struct tegra_channel *chan)
-{
-	u32 num_lanes = 0;
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-
-	struct camera_common_data *s_data =
-		to_camera_common_data(sd->dev);
-	struct sensor_mode_properties *sensor_mode;
-
-	if (!s_data)
-		return 0;
-
-	sensor_mode = &s_data->sensor_props.sensor_modes[0];
-	num_lanes = sensor_mode->signal_properties.num_lanes;
-
-	return num_lanes;
-}
-
-static u32 tegra_channel_get_sensor_type(struct tegra_channel *chan)
-{
-	u32 phy_mode = 0, sensor_type = 0;
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-	struct camera_common_data *s_data =
-		to_camera_common_data(sd->dev);
-	struct sensor_mode_properties *sensor_mode;
-
-	if (!s_data)
-		return 0;
-
-	/* Select phy mode based on the first mode */
-	sensor_mode = &s_data->sensor_props.sensor_modes[0];
-	phy_mode = sensor_mode->signal_properties.phy_mode;
-	sensor_type = map_to_sensor_type(phy_mode);
-
-	return sensor_type;
-}
-
-static u64 tegra_channel_get_max_source_rate(void)
-{
-	/* WAR: bug 2095503 */
-	/* TODO very large hard-coded rate based on 4k@60 fps */
-	/* implement proper functionality here. */
-	u64 pixelrate = HDMI_IN_RATE;
-	return pixelrate;
-}
-
 static void tegra_channel_populate_dev_info(struct tegra_camera_dev_info *cdev,
 			struct tegra_channel *chan)
 {
 	u64 pixelclock = 0;
 	u32 max_num_lanes = 0;
-	struct camera_common_data *s_data =
-			to_camera_common_data(chan->subdev_on_csi->dev);
+	struct v4l2_mbus_config mbus_cfg = { };
+	int ret;
 
-	if (s_data != NULL) {
-		/* camera sensors */
-		cdev->sensor_type = tegra_channel_get_sensor_type(chan);
-		tegra_channel_get_sensor_peak_vals(chan, &pixelclock, &max_num_lanes);
-		/* Multiply by CPHY symbols to pixels factor. */
-		if (cdev->sensor_type == SENSORTYPE_CPHY)
-			pixelclock *= 16/7;
-		cdev->lane_num = tegra_channel_get_num_lanes(chan);
+	ret = v4l2_subdev_call(chan->subdev[0], pad, get_mbus_config,
+			       chan->subdev_pad[0], &mbus_cfg);
+	if (ret)
+		return;
+
+	max_num_lanes = mbus_cfg.bus.mipi_csi2.num_data_lanes;
+	pixelclock = mbus_cfg.link_freq * max_num_lanes;
+
+	if (mbus_cfg.type == V4L2_MBUS_CSI2_DPHY) {
+		cdev->sensor_type = SENSORTYPE_DPHY;
+		pixelclock = pixelclock * 2;
+	} else if (mbus_cfg.type == V4L2_MBUS_CSI2_CPHY) {
+		cdev->sensor_type = SENSORTYPE_CPHY;
+		pixelclock = pixelclock * 16 / 7;
 	} else {
-		if (chan->pg_mode) {
-			/* TPG mode */
-			cdev->sensor_type = SENSORTYPE_VIRTUAL;
-#if defined(NV_V4L2_SUBDEV_PAD_OPS_STRUCT_HAS_DV_TIMINGS) /* Linux v6.10 */
-		} else if (v4l2_subdev_has_op(chan->subdev_on_csi,
-						pad, g_dv_timings)) {
-#else
-		} else if (v4l2_subdev_has_op(chan->subdev_on_csi,
-						video, g_dv_timings)) {
-#endif
-			/* HDMI-IN */
-			cdev->sensor_type = SENSORTYPE_OTHER;
-			pixelclock = tegra_channel_get_max_source_rate();
-		} else {
-			/* Focusers, no pixel clk and ISO BW, just bail out */
-			return;
-		}
+		return;
 	}
+
+	pixelclock /= chan->fmtinfo->width;
+
 	/*
 	 * VI clk scaling for gang mode usecase where 2 CSI bricks
 	 * stream through a single VI channel.
