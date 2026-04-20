@@ -875,6 +875,32 @@ static void vi5_unit_get_device_handle(struct platform_device *pdev,
 		dev_err(&pdev->dev, "dev pointer is NULL\n");
 }
 
+static int vi5_get_emb_data_size(struct tegra_channel *chan,
+				 unsigned int *embedded_data_width,
+				 unsigned int *embedded_data_height)
+{
+	struct v4l2_mbus_frame_desc fd;
+	unsigned int i;
+	int ret;
+
+	ret = v4l2_subdev_call(chan->subdev[0], pad, get_frame_desc,
+			       chan->subdev_pad[0], &fd);
+	if (ret)
+		return ret;
+
+	for (i = 0; i < fd.num_entries; i++)
+		if (fd.entry[i].pixelcode == MEDIA_BUS_FMT_META_8)
+			break;
+
+	if (i == fd.num_entries)
+		return 0;
+
+	*embedded_data_width = chan->format.width;
+	*embedded_data_height = fd.entry[i].length / chan->format.width;
+
+	return 0;
+}
+
 static int vi5_channel_start_streaming(struct vb2_queue *vq, u32 count)
 {
 	struct tegra_channel *chan = vb2_get_drv_priv(vq);
@@ -883,10 +909,6 @@ static int vi5_channel_start_streaming(struct vb2_queue *vq, u32 count)
 	int ret = 0;
 	int vi_port = 0;
 	unsigned long flags;
-	struct v4l2_subdev *sd;
-	struct device_node *node;
-	struct sensor_mode_properties *sensor_mode;
-	struct camera_common_data *s_data;
 	unsigned int emb_buf_size = 0;
 
 	/* Skip in bypass mode */
@@ -902,37 +924,16 @@ static int vi5_channel_start_streaming(struct vb2_queue *vq, u32 count)
 			spin_unlock_irqrestore(&chan->capture_state_lock, flags);
 
 			if (!chan->pg_mode) {
-				sd = chan->subdev_on_csi;
-				node = sd->dev->of_node;
-				s_data = to_camera_common_data(sd->dev);
+				ret = vi5_get_emb_data_size(chan,
+							    &chan->embedded_data_width,
+							    &chan->embedded_data_height);
+				if (ret)
+					return ret;
 
-				/* get sensor properties from DT */
-				if (s_data != NULL && node != NULL) {
-					int idx = s_data->mode_prop_idx;
-
-					emb_buf_size = 0;
-					if (idx < s_data->sensor_props.\
-								num_modes) {
-						sensor_mode =
-							&s_data->sensor_props.\
-							sensor_modes[idx];
-
-						chan->embedded_data_width =
-							sensor_mode->\
-							image_properties.width;
-						chan->embedded_data_height =
-							sensor_mode->\
-							 image_properties.\
-						      embedded_metadata_height;
-						/* rounding up to page size */
-						emb_buf_size =
-							round_up(chan->\
-							embedded_data_width *
-								chan->\
-							embedded_data_height *
-							BPP_MEM, PAGE_SIZE);
-					}
-				}
+				emb_buf_size =
+					round_up(chan->embedded_data_width *
+						 chan->embedded_data_height *
+						 BPP_MEM, PAGE_SIZE);
 				/* Allocate buffer for Embedded Data if need to*/
 				if (emb_buf_size > chan->emb_buf_size) {
 					struct device *vi_unit_dev;
