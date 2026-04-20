@@ -1341,6 +1341,38 @@ void tegra_channel_remove_subdevices(struct tegra_channel *chan)
 }
 EXPORT_SYMBOL(tegra_channel_remove_subdevices);
 
+static int tegra_find_route_sink_pad(struct v4l2_subdev *sd,
+				     unsigned int source_pad,
+				     unsigned int source_stream)
+{
+	struct v4l2_subdev_state *state;
+	struct v4l2_subdev_krouting *routing;
+	unsigned int i;
+	int sink_pad = -1;
+
+	if (!(sd->flags & V4L2_SUBDEV_FL_STREAMS))
+		return -1;
+
+	state = v4l2_subdev_lock_and_get_active_state(sd);
+	if (!state)
+		return -1;
+
+	routing = &state->routing;
+	for (i = 0; i < routing->num_routes; i++) {
+		struct v4l2_subdev_route *route = &routing->routes[i];
+
+		if (route->source_pad == source_pad &&
+		    route->source_stream == source_stream &&
+		    (route->flags & V4L2_SUBDEV_ROUTE_FL_ACTIVE)) {
+			sink_pad = route->sink_pad;
+			break;
+		}
+	}
+
+	v4l2_subdev_unlock_state(state);
+	return sink_pad;
+}
+
 int tegra_channel_init_subdevices(struct tegra_channel *chan)
 {
 	int ret = 0;
@@ -1348,6 +1380,7 @@ int tegra_channel_init_subdevices(struct tegra_channel *chan)
 	struct media_pad *pad;
 	struct v4l2_subdev *sd;
 	int index = 0;
+	int entry_pad_idx = 0;
 	u8 num_sd = 0;
 	struct tegra_camera_dev_info camdev_info;
 	int grp_id = chan->pg_mode ? (TPG_CSI_GROUP_ID + chan->port[0] + 1)
@@ -1363,6 +1396,7 @@ int tegra_channel_init_subdevices(struct tegra_channel *chan)
 	if (!pad)
 		return -ENODEV;
 
+	entry_pad_idx = pad->index;
 	entity = pad->entity;
 	sd = media_entity_to_v4l2_subdev(entity);
 	v4l2_set_subdev_hostdata(sd, chan);
@@ -1382,8 +1416,30 @@ int tegra_channel_init_subdevices(struct tegra_channel *chan)
 	sd->grp_id = grp_id;
 	chan->grp_id = grp_id;
 	while (index < entity->num_pads) {
+		int target_sink;
+
 		pad = &entity->pads[index];
 		if (!(pad->flags & MEDIA_PAD_FL_SINK)) {
+			index++;
+			continue;
+		}
+
+		/* Select sink pad via routing; fall back to VC index */
+		target_sink = tegra_find_route_sink_pad(
+			sd, entry_pad_idx, chan->virtual_channel);
+		if (target_sink < 0 && (sd->flags & V4L2_SUBDEV_FL_STREAMS)) {
+			unsigned int num_sinks = 0;
+			unsigned int p;
+
+			for (p = 0; p < entity->num_pads; p++) {
+				if (entity->pads[p].flags & MEDIA_PAD_FL_SINK)
+					num_sinks++;
+			}
+			if (num_sinks > 1 &&
+			    chan->virtual_channel < num_sinks)
+				target_sink = chan->virtual_channel;
+		}
+		if (target_sink >= 0 && (int)pad->index != target_sink) {
 			index++;
 			continue;
 		}
@@ -1401,7 +1457,9 @@ int tegra_channel_init_subdevices(struct tegra_channel *chan)
 		if (num_sd >= MAX_SUBDEVICES)
 			break;
 
+		entry_pad_idx = pad->index;
 		entity = pad->entity;
+		index = 0;
 		sd = media_entity_to_v4l2_subdev(entity);
 		v4l2_set_subdev_hostdata(sd, chan);
 		sd->grp_id = grp_id;
