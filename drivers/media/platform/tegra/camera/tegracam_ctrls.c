@@ -25,8 +25,6 @@
 #define CTRL_MAX_STR_SIZE 4096
 #define STEREO_EEPROM_SIZE 4096
 
-#define TEGRACAM_DEF_CTRLS 1
-
 static int tegracam_s_ctrl(struct v4l2_ctrl *ctrl);
 static const struct v4l2_ctrl_ops tegracam_ctrl_ops = {
 	.s_ctrl = tegracam_s_ctrl,
@@ -35,6 +33,8 @@ static const struct v4l2_ctrl_ops tegracam_ctrl_ops = {
 static const u32 tegracam_def_cids[] = {
 	TEGRA_CAMERA_CID_GROUP_HOLD,
 };
+
+#define TEGRACAM_DEF_CTRLS ARRAY_SIZE(tegracam_def_cids)
 
 /*
  * For auto control, the states of the previous controls must
@@ -873,7 +873,7 @@ static int tegracam_check_ctrl_ops(
 
 	if (total_ops != (ops->numctrls + TEGRACAM_DEF_CTRLS)) {
 		dev_err(dev,
-			"ERROR: %d controls registered with framework but missing implementation\n",
+			"ERROR: %ld controls registered with framework but missing implementation\n",
 			(ops->numctrls + TEGRACAM_DEF_CTRLS) - total_ops);
 		return -EINVAL;
 	}
