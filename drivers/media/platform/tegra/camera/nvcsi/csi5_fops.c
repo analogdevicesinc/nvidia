@@ -203,9 +203,6 @@ static int csi5_stream_set_config(struct tegra_csi_channel *chan, u32 stream_id,
 	struct tegra_channel *tegra_chan =
 			v4l2_get_subdev_hostdata(&chan->subdev);
 
-	struct camera_common_data *s_data = chan->s_data;
-	const struct sensor_mode_properties *mode = NULL;
-
 	unsigned int cil_settletime = 0;
 	unsigned int lane_polarity = 0;
 	int vi_port = 0;
@@ -219,21 +216,7 @@ static int csi5_stream_set_config(struct tegra_csi_channel *chan, u32 stream_id,
 	dev_dbg(csi->dev, "%s: stream_id=%u, csi_port=%u\n",
 		__func__, stream_id, csi_port);
 
-	/* Attempt to find the brick config from the device tree */
-	if (s_data) {
-		int idx = s_data->mode_prop_idx;
-
-		dev_dbg(csi->dev, "cil_settingtime is pulled from device");
-		if (idx < s_data->sensor_props.num_modes) {
-			mode = &s_data->sensor_props.sensor_modes[idx];
-			cil_settletime = mode->signal_properties.cil_settletime;
-			lane_polarity = mode->signal_properties.lane_polarity;
-		} else {
-			dev_dbg(csi->dev, "mode not listed in DT, use default");
-			cil_settletime = 0;
-			lane_polarity = 0;
-		}
-	} else if (chan->of_node) {
+	if (chan->of_node) {
 		int err = 0;
 		const char *str = NULL;
 
@@ -281,14 +264,10 @@ static int csi5_stream_set_config(struct tegra_csi_channel *chan, u32 stream_id,
 	cil_config.lp_bypass_mode = is_cphy ? 0 : 1;
 	cil_config.t_hs_settle = cil_settletime;
 
-	if (s_data && !chan->pg_mode)
+	if (!chan->pg_mode)
 		cil_config.mipi_clock_rate = read_mipi_clk_from_dt(chan) / 1000;
 	else
-#if 0
-		cil_config.mipi_clock_rate = csi->clk_freq / 1000;
-#else
 		cil_config.mipi_clock_rate = TEGRA_CLOCK_CSI_PORT_MAX / 1000;
-#endif
 
 	memset(&err_config, 0, sizeof(err_config));
 	/* Set NVCSI stream config */
