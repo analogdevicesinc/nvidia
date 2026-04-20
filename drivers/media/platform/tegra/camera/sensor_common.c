@@ -103,6 +103,14 @@ static int sensor_common_parse_signal_props(
 	}
 	signal->num_lanes = value;
 
+	err = read_property_u32(node, "csi_pixel_bit_depth", &depth);
+	if (err) {
+		dev_err(dev,
+			"%s:csi_pixel_bit_depth property missing.\n",
+			__func__);
+		return err;
+	}
+
 	err = read_property_u64(node, "pix_clk_hz", &val64);
 	if (err) {
 		dev_err(dev, "%s:pix_clk_hz property missing\n", __func__);
@@ -126,14 +134,6 @@ static int sensor_common_parse_signal_props(
 		rate = signal->serdes_pixel_clock.val;
 	} else {
 		rate = signal->pixel_clock.val;
-	}
-
-	err = read_property_u32(node, "csi_pixel_bit_depth", &depth);
-	if (err) {
-		dev_err(dev,
-			"%s:csi_pixel_bit_depth property missing.\n",
-			__func__);
-		return err;
 	}
 
 	/* Convert pixel rate to lane data rate */
