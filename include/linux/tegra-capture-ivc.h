@@ -69,7 +69,8 @@ typedef void (*tegra_capture_ivc_cb_func)(
 int tegra_capture_ivc_register_control_cb(
 	tegra_capture_ivc_cb_func control_resp_cb,
 	uint32_t *trans_id,
-	const void *priv_context);
+	const void *priv_context,
+	size_t size);
 
 /**
  * @brief Notify client’s channel ID to capture-IVC driver.
@@ -108,7 +109,8 @@ int tegra_capture_ivc_notify_chan_id(
 int tegra_capture_ivc_register_capture_cb(
 	tegra_capture_ivc_cb_func capture_status_ind_cb,
 	uint32_t chan_id,
-	const void *priv_context);
+	const void *priv_context,
+	size_t size);
 
 /**
  * @brief Un-register callback function to stop receiving messages over

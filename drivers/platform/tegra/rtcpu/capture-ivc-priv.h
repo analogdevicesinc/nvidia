@@ -24,6 +24,7 @@ struct tegra_capture_ivc_cb_ctx {
 	struct list_head node;
 	/** Callback function registered by client */
 	tegra_capture_ivc_cb_func cb_func;
+	size_t size;
 	/** Private context of a VI/ISP capture context */
 	const void *priv_context;
 	struct semaphore sem_ch;

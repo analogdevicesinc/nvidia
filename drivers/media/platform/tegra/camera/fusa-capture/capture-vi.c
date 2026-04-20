@@ -682,7 +682,8 @@ int vi_capture_setup(
 
 	err = tegra_capture_ivc_register_control_cb(
 			&vi_capture_ivc_control_callback,
-			&transaction, capture);
+			&transaction, capture,
+			sizeof(struct CAPTURE_CONTROL_MSG));
 	if (err < 0) {
 		dev_err(chan->dev, "failed to register control callback\n");
 		goto control_cb_fail;
@@ -789,7 +790,8 @@ int vi_capture_setup(
 
 	err = tegra_capture_ivc_register_capture_cb(
 			&vi_capture_ivc_status_callback,
-			capture->channel_id, capture);
+			capture->channel_id, capture,
+			sizeof(struct CAPTURE_MSG));
 	if (err < 0) {
 		dev_err(chan->dev, "failed to register capture callback\n");
 		goto cb_fail;
