@@ -1006,6 +1006,39 @@ int camera_common_get_mbus_config(struct v4l2_subdev *sd,
 }
 EXPORT_SYMBOL_GPL(camera_common_get_mbus_config);
 
+static u8 camera_common_mbus_code_to_mipi_dt(u32 code)
+{
+	switch (code) {
+	case MEDIA_BUS_FMT_SBGGR8_1X8:
+	case MEDIA_BUS_FMT_SGBRG8_1X8:
+	case MEDIA_BUS_FMT_SGRBG8_1X8:
+	case MEDIA_BUS_FMT_SRGGB8_1X8:
+	case MEDIA_BUS_FMT_Y8_1X8:
+		return MIPI_CSI2_DT_RAW8;
+	case MEDIA_BUS_FMT_SBGGR10_1X10:
+	case MEDIA_BUS_FMT_SGBRG10_1X10:
+	case MEDIA_BUS_FMT_SGRBG10_1X10:
+	case MEDIA_BUS_FMT_SRGGB10_1X10:
+	case MEDIA_BUS_FMT_Y10_1X10:
+		return MIPI_CSI2_DT_RAW10;
+	case MEDIA_BUS_FMT_SBGGR12_1X12:
+	case MEDIA_BUS_FMT_SGBRG12_1X12:
+	case MEDIA_BUS_FMT_SGRBG12_1X12:
+	case MEDIA_BUS_FMT_SRGGB12_1X12:
+	case MEDIA_BUS_FMT_Y12_1X12:
+		return MIPI_CSI2_DT_RAW12;
+	case MEDIA_BUS_FMT_UYVY8_1X16:
+	case MEDIA_BUS_FMT_VYUY8_1X16:
+	case MEDIA_BUS_FMT_YUYV8_1X16:
+	case MEDIA_BUS_FMT_YVYU8_1X16:
+		return MIPI_CSI2_DT_YUV422_8B;
+	case MEDIA_BUS_FMT_RGB888_1X24:
+		return MIPI_CSI2_DT_RGB888;
+	default:
+		return 0;
+	}
+}
+
 int camera_common_get_frame_desc(struct v4l2_subdev *sd, unsigned int pad,
 				 struct v4l2_mbus_frame_desc *fd)
 {
@@ -1018,15 +1051,22 @@ int camera_common_get_frame_desc(struct v4l2_subdev *sd, unsigned int pad,
 
 	fd->type = V4L2_MBUS_FRAME_DESC_TYPE_CSI2;
 
+	/* Stream 0: image data */
 	fd->entry[0].pixelcode = s_data->colorfmt->code;
+	fd->entry[0].stream = 0;
+	fd->entry[0].bus.csi2.vc = 0;
+	fd->entry[0].bus.csi2.dt =
+		camera_common_mbus_code_to_mipi_dt(s_data->colorfmt->code);
 	fd->num_entries++;
 
+	/* Stream 1: embedded metadata (if supported) */
 	if (image->embedded_metadata_height) {
 		fd->entry[1].pixelcode = MEDIA_BUS_FMT_META_8;
 		fd->entry[1].length = image->width *
 				      image->embedded_metadata_height;
-		fd->entry[1].bus.csi2.dt = MIPI_CSI2_DT_EMBEDDED_8B;
 		fd->entry[1].stream = 1;
+		fd->entry[1].bus.csi2.vc = 0;
+		fd->entry[1].bus.csi2.dt = MIPI_CSI2_DT_EMBEDDED_8B;
 		fd->num_entries++;
 	}
 
