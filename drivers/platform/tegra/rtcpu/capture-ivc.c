@@ -380,35 +380,52 @@ static inline void tegra_capture_ivc_recv(struct tegra_capture_ivc *civc)
 {
 	struct tegra_ivc *ivc = &civc->chan->ivc;
 	struct device *dev = &civc->chan->dev;
-	const void *msg;
-	const struct tegra_capture_ivc_msg_header *hdr;
+	void *msg;
+	uint32_t msg_id;
 	uint32_t id;
+	size_t size;
 
-	while (tegra_ivc_can_read(ivc)) {
 #if defined(NV_TEGRA_IVC_STRUCT_HAS_IOSYS_MAP) /* Linux 6.2 */
-		struct iosys_map map;
-		int err;
-		err = tegra_ivc_read_get_next_frame(ivc, &map);
-		if (err) {
-			dev_err(dev, "Failed to get next frame for read\n");
-			return;
-		}
-		msg = map.vaddr;
+	struct iosys_map map;
+
+	while (tegra_ivc_read_get_next_frame(ivc, &map) == 0) {
+#define tegra_capture_ivc_read_field(mb, field) \
+	iosys_map_rd_field(mb, 0, struct tegra_capture_ivc_msg_header, field)
+
+		id = tegra_capture_ivc_read_field(&map, channel_id);
+		msg_id = tegra_capture_ivc_read_field(&map, msg_id);
+
+#undef tegra_capture_ivc_read_field
 #else
+	while (tegra_ivc_can_read(ivc)) {
+		const struct tegra_capture_ivc_msg_header *hdr;
+
 		msg = tegra_ivc_read_get_next_frame(ivc);
-#endif
 		hdr = msg;
 		id = hdr->channel_id;
-
-		trace_capture_ivc_recv(dev_name(dev), hdr->msg_id, id);
+		msg_id = hdr->msg_id;
+#endif
 
 		/* Check if message is valid */
-		if (id < TOTAL_CHANNELS) {
-			id = array_index_nospec(id, TOTAL_CHANNELS);
-			tegra_capture_ivc_recv_msg(civc, id, msg);
-		} else {
+		if (id >= TOTAL_CHANNELS) {
 			dev_WARN(dev, "Invalid rtcpu channel id %u", id);
+			break;
 		}
+
+		id = array_index_nospec(id, TOTAL_CHANNELS);
+		size = civc->cb_ctx[id].size;
+
+#if defined(NV_TEGRA_IVC_STRUCT_HAS_IOSYS_MAP) /* Linux 6.2 */
+		msg = kzalloc(size, GFP_KERNEL);
+		iosys_map_memcpy_from(msg, &map, 0, size);
+#endif
+
+		trace_capture_ivc_recv(dev_name(dev), msg_id, id);
+		tegra_capture_ivc_recv_msg(civc, id, msg);
+
+#if defined(NV_TEGRA_IVC_STRUCT_HAS_IOSYS_MAP) /* Linux 6.2 */
+		kfree(msg);
+#endif
 
 		tegra_ivc_read_advance(ivc);
 	}
