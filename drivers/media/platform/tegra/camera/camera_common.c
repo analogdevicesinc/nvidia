@@ -973,17 +973,32 @@ int camera_common_get_mbus_config(struct v4l2_subdev *sd,
 				unsigned int pad,
 				struct v4l2_mbus_config *cfg)
 {
+	struct camera_common_data *s_data = to_camera_common_data(sd->dev);
+	const struct sensor_properties *props = &s_data->sensor_props;
+	struct sensor_signal_properties *signal;
+	u32 mode_idx = s_data->mode_prop_idx;
+
+	signal = &props->sensor_modes[mode_idx].signal_properties;
+
 	/*
 	 * TODO Bug 200664694: If the sensor type is CPHY
 	 *  then return an error
 	 */
-	cfg->type = V4L2_MBUS_CSI2_DPHY;
-#if defined(NV_V4L2_FWNODE_ENDPOINT_STRUCT_HAS_V4L2_MBUS_CONFIG_MIPI_CSI2) /* Linux v5.18 */
-	cfg->bus.mipi_csi2.num_data_lanes = 4;
-#else
+	if (signal->phy_mode == CSI_PHY_MODE_DPHY)
+		cfg->type = V4L2_MBUS_CSI2_DPHY;
+	else if (signal->phy_mode == CSI_PHY_MODE_CPHY)
+		cfg->type = V4L2_MBUS_CSI2_CPHY;
+	else
+		return -EINVAL;
+
+	cfg->link_freq = signal->mipi_clock.val;
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
 	cfg->flags = V4L2_MBUS_CSI2_4_LANE |
 		V4L2_MBUS_CSI2_CHANNEL_0 |
 		V4L2_MBUS_CSI2_CONTINUOUS_CLOCK;
+#else
+	cfg->bus.mipi_csi2.num_data_lanes = signal->num_lanes;
 #endif
 
 	return 0;
