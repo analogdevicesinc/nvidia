@@ -168,6 +168,8 @@ struct tegra_channel {
 
 	struct tegra_mc_vi *vi;
 	struct v4l2_subdev *subdev[MAX_SUBDEVICES];
+	u32 subdev_pad[MAX_SUBDEVICES];
+
 	struct v4l2_subdev *subdev_on_csi;
 
 	struct v4l2_ctrl_handler ctrl_handler;

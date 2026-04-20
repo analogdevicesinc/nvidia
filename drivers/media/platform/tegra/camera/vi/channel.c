@@ -1959,7 +1959,9 @@ int tegra_channel_init_subdevices(struct tegra_channel *chan)
 	entity = pad->entity;
 	sd = media_entity_to_v4l2_subdev(entity);
 	v4l2_set_subdev_hostdata(sd, chan);
-	chan->subdev[num_sd++] = sd;
+	chan->subdev[num_sd] = sd;
+	chan->subdev_pad[num_sd] = pad->index;
+	num_sd++;
 
 	/* verify if the immediate subdevice is slvsec */
 	chan->is_slvsec = (strstr(sd->name, "slvs") != NULL) ? 1 : 0;
@@ -1994,7 +1996,9 @@ int tegra_channel_init_subdevices(struct tegra_channel *chan)
 		sd = media_entity_to_v4l2_subdev(entity);
 		v4l2_set_subdev_hostdata(sd, chan);
 		sd->grp_id = grp_id;
-		chan->subdev[num_sd++] = sd;
+		chan->subdev[num_sd] = sd;
+		chan->subdev_pad[num_sd] = pad->index;
+		num_sd++;
 		/* Add subdev name to this video dev name with vi-output tag*/
 		len = snprintf(chan->video->name, sizeof(chan->video->name), "%s, %s",
 			"vi-output", sd->name);
