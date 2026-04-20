@@ -357,10 +357,6 @@ int tegra_channel_cleanup(struct tegra_channel *chan);
 int tegra_vi_channels_cleanup(struct tegra_mc_vi *vi);
 int tegra_channel_init_subdevices(struct tegra_channel *chan);
 void tegra_channel_remove_subdevices(struct tegra_channel *chan);
-#if 0
-struct v4l2_subdev *tegra_channel_find_linked_csi_subdev(
-	struct tegra_channel *chan);
-#endif
 int tegra_vi2_power_on(struct tegra_mc_vi *vi);
 void tegra_vi2_power_off(struct tegra_mc_vi *vi);
 int tegra_vi4_power_on(struct tegra_mc_vi *vi);
@@ -396,7 +392,6 @@ const struct tegra_video_format *tegra_core_get_format_by_fourcc(
 void tegra_channel_queued_buf_done(struct tegra_channel *chan,
 	enum vb2_buffer_state state, bool multi_queue);
 int tegra_channel_set_stream(struct tegra_channel *chan, bool on);
-int tegra_channel_write_blobs(struct tegra_channel *chan);
 void tegra_channel_ring_buffer(struct tegra_channel *chan,
 			       struct vb2_v4l2_buffer *vb,
 			       struct timespec64 *ts, int state);

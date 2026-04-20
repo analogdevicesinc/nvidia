@@ -26,12 +26,22 @@
 #define STEREO_EEPROM_SIZE 4096
 
 static int tegracam_s_ctrl(struct v4l2_ctrl *ctrl);
+static int tegracam_g_volatile_ctrl(struct v4l2_ctrl *ctrl);
 static const struct v4l2_ctrl_ops tegracam_ctrl_ops = {
 	.s_ctrl = tegracam_s_ctrl,
+	.g_volatile_ctrl = tegracam_g_volatile_ctrl,
 };
 
 static const u32 tegracam_def_cids[] = {
 	TEGRA_CAMERA_CID_GROUP_HOLD,
+	TEGRA_CAMERA_CID_SENSOR_MODES,
+	TEGRA_CAMERA_CID_SENSOR_SIGNAL_PROPERTIES,
+	TEGRA_CAMERA_CID_SENSOR_IMAGE_PROPERTIES,
+	TEGRA_CAMERA_CID_SENSOR_CONTROL_PROPERTIES,
+	TEGRA_CAMERA_CID_SENSOR_DV_TIMINGS,
+	TEGRA_CAMERA_CID_SENSOR_CONFIG,
+	TEGRA_CAMERA_CID_SENSOR_MODE_BLOB,
+	TEGRA_CAMERA_CID_SENSOR_CONTROL_BLOB,
 };
 
 #define TEGRACAM_DEF_CTRLS ARRAY_SIZE(tegracam_def_cids)
@@ -181,6 +191,115 @@ static struct v4l2_ctrl_config ctrl_cfg_list[] = {
 		.min = CTRL_U8_MIN,
 		.max = CTRL_U8_MAX,
 		.step = 1,
+	},
+	{
+		.ops = &tegracam_ctrl_ops,
+		.id = TEGRA_CAMERA_CID_SENSOR_MODES,
+		.name = "Sensor Modes",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.flags = V4L2_CTRL_FLAG_READ_ONLY,
+		.min = 0,
+		.max = MAX_NUM_SENSOR_MODES,
+		.def = MAX_NUM_SENSOR_MODES,
+		.step = 1,
+	},
+	{
+		.ops = &tegracam_ctrl_ops,
+		.id = TEGRA_CAMERA_CID_SENSOR_SIGNAL_PROPERTIES,
+		.name = "Sensor Signal Properties",
+		.type = V4L2_CTRL_TYPE_U32,
+		.flags = V4L2_CTRL_FLAG_HAS_PAYLOAD |
+			 V4L2_CTRL_FLAG_READ_ONLY,
+		.min = 0,
+		.max = 0xFFFFFFFF,
+		.step = 1,
+		.def = 0,
+		.dims = { MAX_NUM_SENSOR_MODES,
+			  SENSOR_SIGNAL_PROPERTIES_CID_SIZE },
+	},
+	{
+		.ops = &tegracam_ctrl_ops,
+		.id = TEGRA_CAMERA_CID_SENSOR_IMAGE_PROPERTIES,
+		.name = "Sensor Image Properties",
+		.type = V4L2_CTRL_TYPE_U32,
+		.flags = V4L2_CTRL_FLAG_HAS_PAYLOAD |
+			 V4L2_CTRL_FLAG_READ_ONLY,
+		.min = 0,
+		.max = 0xFFFFFFFF,
+		.step = 1,
+		.def = 0,
+		.dims = { MAX_NUM_SENSOR_MODES,
+			  SENSOR_IMAGE_PROPERTIES_CID_SIZE },
+	},
+	{
+		.ops = &tegracam_ctrl_ops,
+		.id = TEGRA_CAMERA_CID_SENSOR_CONTROL_PROPERTIES,
+		.name = "Sensor Control Properties",
+		.type = V4L2_CTRL_TYPE_U32,
+		.flags = V4L2_CTRL_FLAG_HAS_PAYLOAD |
+			 V4L2_CTRL_FLAG_READ_ONLY,
+		.min = 0,
+		.max = 0xFFFFFFFF,
+		.step = 1,
+		.def = 0,
+		.dims = { MAX_NUM_SENSOR_MODES,
+			  SENSOR_CONTROL_PROPERTIES_CID_SIZE },
+	},
+	{
+		.ops = &tegracam_ctrl_ops,
+		.id = TEGRA_CAMERA_CID_SENSOR_DV_TIMINGS,
+		.name = "Sensor DV Timings",
+		.type = V4L2_CTRL_TYPE_U32,
+		.flags = V4L2_CTRL_FLAG_HAS_PAYLOAD |
+			 V4L2_CTRL_FLAG_READ_ONLY,
+		.min = 0,
+		.max = 0xFFFFFFFF,
+		.step = 1,
+		.def = 0,
+		.dims = { MAX_NUM_SENSOR_MODES,
+			  SENSOR_DV_TIMINGS_CID_SIZE },
+	},
+	{
+		.ops = &tegracam_ctrl_ops,
+		.id = TEGRA_CAMERA_CID_SENSOR_CONFIG,
+		.name = "Sensor configuration",
+		.type = V4L2_CTRL_TYPE_U32,
+		.flags = V4L2_CTRL_FLAG_READ_ONLY |
+			V4L2_CTRL_FLAG_HAS_PAYLOAD |
+			V4L2_CTRL_FLAG_VOLATILE,
+		.min = 0,
+		.max = 0xFFFFFFFF,
+		.def = 0,
+		.step = 1,
+		.dims = { SENSOR_CONFIG_SIZE },
+	},
+	{
+		.ops = &tegracam_ctrl_ops,
+		.id = TEGRA_CAMERA_CID_SENSOR_MODE_BLOB,
+		.name = "Sensor mode I2C packet",
+		.type = V4L2_CTRL_TYPE_U32,
+		.flags = V4L2_CTRL_FLAG_READ_ONLY |
+			V4L2_CTRL_FLAG_HAS_PAYLOAD |
+			V4L2_CTRL_FLAG_VOLATILE,
+		.min = 0,
+		.max = 0xFFFFFFFF,
+		.def = 0,
+		.step = 1,
+		.dims = { SENSOR_MODE_BLOB_SIZE },
+	},
+	{
+		.ops = &tegracam_ctrl_ops,
+		.id = TEGRA_CAMERA_CID_SENSOR_CONTROL_BLOB,
+		.name = "Sensor control I2C packet",
+		.type = V4L2_CTRL_TYPE_U32,
+		.flags = V4L2_CTRL_FLAG_READ_ONLY |
+			V4L2_CTRL_FLAG_HAS_PAYLOAD |
+			V4L2_CTRL_FLAG_VOLATILE,
+		.min = 0,
+		.max = 0xFFFFFFFF,
+		.def = 0,
+		.step = 1,
+		.dims = { SENSOR_CTRL_BLOB_SIZE },
 	},
 };
 
@@ -440,6 +559,49 @@ static int tegracam_s_ctrl(struct v4l2_ctrl *ctrl)
 		return tegracam_set_ctrls_ex(handler, ctrl);
 	else
 		return tegracam_set_ctrls(handler, ctrl);
+
+	return 0;
+}
+
+static int tegracam_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
+{
+	struct tegracam_ctrl_handler *handler =
+		container_of(ctrl->handler,
+			struct tegracam_ctrl_handler, ctrl_handler);
+	struct tegracam_device *tc_dev = handler->tc_dev;
+	struct camera_common_data *s_data = tc_dev->s_data;
+	struct tegracam_sensor_data *sensor_data;
+
+	if (!s_data)
+		return -EINVAL;
+	handler = s_data->tegracam_ctrl_hdl;
+	if (!handler)
+		return -EINVAL;
+	sensor_data = &handler->sensor_data;
+
+	switch (ctrl->id) {
+	case TEGRA_CAMERA_CID_SENSOR_CONFIG: {
+		struct sensor_cfg *cfg = &s_data->sensor_props.cfg;
+
+		memcpy(ctrl->p_new.p, cfg, sizeof(struct sensor_cfg));
+		break;
+	}
+	case TEGRA_CAMERA_CID_SENSOR_MODE_BLOB: {
+		struct sensor_blob *blob = &sensor_data->mode_blob;
+
+		memcpy(ctrl->p_new.p, blob, sizeof(struct sensor_blob));
+		break;
+	}
+	case TEGRA_CAMERA_CID_SENSOR_CONTROL_BLOB: {
+		struct sensor_blob *blob = &sensor_data->ctrls_blob;
+
+		memcpy(ctrl->p_new.p, blob, sizeof(struct sensor_blob));
+		break;
+	}
+	default:
+		pr_err("%s: unknown ctrl id.\n", __func__);
+		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -849,6 +1011,16 @@ static int tegracam_check_ctrl_ops(
 			if (ops->set_group_hold_ex != NULL)
 				default_ex_ops++;
 			break;
+		case TEGRA_CAMERA_CID_SENSOR_MODES:
+		case TEGRA_CAMERA_CID_SENSOR_SIGNAL_PROPERTIES:
+		case TEGRA_CAMERA_CID_SENSOR_IMAGE_PROPERTIES:
+		case TEGRA_CAMERA_CID_SENSOR_CONTROL_PROPERTIES:
+		case TEGRA_CAMERA_CID_SENSOR_DV_TIMINGS:
+		case TEGRA_CAMERA_CID_SENSOR_CONFIG:
+		case TEGRA_CAMERA_CID_SENSOR_MODE_BLOB:
+		case TEGRA_CAMERA_CID_SENSOR_CONTROL_BLOB:
+			default_ops++;
+			break;
 		default:
 			break;
 		}
@@ -1017,6 +1189,65 @@ static int tegracam_check_ctrl_cids(struct tegracam_ctrl_handler *handler)
 	return 0;
 }
 
+static void tegracam_setup_sensorprops_ctrl(struct tegracam_ctrl_handler *handler,
+					    struct v4l2_ctrl *ctrl,
+					    struct v4l2_ctrl_config *ctrl_cfg)
+{
+	struct tegracam_device *tc_dev = handler->tc_dev;
+	struct camera_common_data *s_data = tc_dev->s_data;
+	const struct sensor_mode_properties *modes;
+	u32 size = ctrl_cfg->dims[1];
+	u32 num_modes;
+	unsigned int i;
+
+	if (!s_data)
+		return;
+
+	num_modes = s_data->sensor_props.num_modes;
+	modes = s_data->sensor_props.sensor_modes;
+
+	switch (ctrl->id) {
+	case TEGRA_CAMERA_CID_SENSOR_MODES:
+		ctrl->val = num_modes;
+		ctrl->cur.val = num_modes;
+		return;
+	case TEGRA_CAMERA_CID_SENSOR_SIGNAL_PROPERTIES:
+	case TEGRA_CAMERA_CID_SENSOR_IMAGE_PROPERTIES:
+	case TEGRA_CAMERA_CID_SENSOR_CONTROL_PROPERTIES:
+	case TEGRA_CAMERA_CID_SENSOR_DV_TIMINGS:
+		ctrl->elems = num_modes * size;
+		break;
+	default:
+		return;
+	}
+
+	for (i = 0; i < num_modes; i++) {
+		void *ptr = ctrl->p_new.p + i * size;
+		const void *data;
+
+		switch (ctrl->id) {
+		case TEGRA_CAMERA_CID_SENSOR_SIGNAL_PROPERTIES:
+			data = &modes[i].signal_properties;
+			break;
+		case TEGRA_CAMERA_CID_SENSOR_IMAGE_PROPERTIES:
+			data = &modes[i].image_properties;
+			break;
+		case TEGRA_CAMERA_CID_SENSOR_CONTROL_PROPERTIES:
+			data = &modes[i].control_properties;
+			break;
+		case TEGRA_CAMERA_CID_SENSOR_DV_TIMINGS:
+			data = &modes[i].dv_timings;
+			break;
+		default:
+			return;
+		}
+
+		memcpy(ptr, data, size);
+	}
+
+	ctrl->p_cur.p = ctrl->p_new.p;
+}
+
 int tegracam_ctrl_handler_init(struct tegracam_ctrl_handler *handler)
 {
 	struct tegracam_device *tc_dev = handler->tc_dev;
@@ -1085,6 +1316,8 @@ int tegracam_ctrl_handler_init(struct tegracam_ctrl_handler *handler)
 				ctrl_cfg->name);
 			return -EINVAL;
 		}
+
+		tegracam_setup_sensorprops_ctrl(handler, ctrl, ctrl_cfg);
 
 		if (ctrl_cfg->type == V4L2_CTRL_TYPE_STRING &&
 			ctrl_cfg->flags & V4L2_CTRL_FLAG_READ_ONLY) {

@@ -220,35 +220,6 @@ static void tegra_channel_fmt_align(struct tegra_channel *chan,
 
 /* Check if sensor mode is interlaced and the type of interlaced mode */
 
-static void tegra_channel_set_interlace_mode(struct tegra_channel *chan)
-{
-	struct v4l2_subdev *sd = NULL;
-	struct camera_common_data *s_data = NULL;
-	struct device_node *node = NULL;
-	struct sensor_mode_properties *s_mode = NULL;
-
-	if (chan->subdev_on_csi) {
-		sd = chan->subdev_on_csi;
-		s_data = to_camera_common_data(sd->dev);
-		node = sd->dev->of_node;
-	}
-
-	if (s_data != NULL && node != NULL) {
-		int idx = s_data->mode_prop_idx;
-
-		if (idx < s_data->sensor_props.num_modes) {
-			s_mode = &s_data->sensor_props.sensor_modes[idx];
-			chan->is_interlaced =
-				s_mode->control_properties.is_interlaced;
-			if (chan->is_interlaced) {
-				if (s_mode->control_properties.interlace_type)
-					chan->interlace_type = Interleaved;
-				else
-					chan->interlace_type = Top_Bottom;
-			}
-		}
-	}
-}
 
 static void tegra_channel_update_format(struct tegra_channel *chan,
 		u32 width, u32 height, u32 fourcc,
@@ -283,7 +254,6 @@ static void tegra_channel_update_format(struct tegra_channel *chan,
 	chan->format.sizeimage = get_aligned_buffer_size(chan,
 			chan->format.bytesperline, chan->format.height);
 
-	tegra_channel_set_interlace_mode(chan);
 	/* Double the size of allocated buffer for interlaced sensor modes */
 	if (chan->is_interlaced)
 		chan->format.sizeimage *= 2;
@@ -294,61 +264,15 @@ static void tegra_channel_update_format(struct tegra_channel *chan,
 
 static void tegra_channel_fmts_bitmap_init(struct tegra_channel *chan)
 {
-	int ret, pixel_format_index = 0, init_code = 0;
-	struct v4l2_subdev *subdev = chan->subdev_on_csi;
 	struct v4l2_subdev_format fmt = {
-		.pad = 0,
-		.which = V4L2_SUBDEV_FORMAT_ACTIVE,
+		.format = {
+			.width = TEGRA_DEF_WIDTH,
+			.height = TEGRA_DEF_HEIGHT,
+			.code = TEGRA_VF_DEF,
+		},
 	};
-	struct v4l2_subdev_mbus_code_enum code = {
-		.which = V4L2_SUBDEV_FORMAT_ACTIVE,
-	};
 
-	struct v4l2_subdev_pad_config pad_cfg = { };
-	struct v4l2_subdev_state cfg = {.pads = &pad_cfg};
-	bitmap_zero(chan->fmts_bitmap, MAX_FORMAT_NUM);
-
-	/*
-	 * Initialize all the formats available from
-	 * the sub-device and extract the corresponding
-	 * index from the pre-defined video formats and initialize
-	 * the channel default format with the active code
-	 * Index zero as the only sub-device is sensor
-	 */
-	while (1) {
-		ret = v4l2_subdev_call(subdev, pad, enum_mbus_code,
-				       &cfg, &code);
-		if (ret < 0)
-			/* no more formats */
-			break;
-
-		pixel_format_index =
-			tegra_core_get_idx_by_code(chan, code.code, 0);
-		while (pixel_format_index >= 0) {
-			bitmap_set(chan->fmts_bitmap, pixel_format_index, 1);
-			/* Set init_code to the first matched format */
-			if (!init_code)
-				init_code = code.code;
-			/* Look for other formats with the same mbus code */
-			pixel_format_index = tegra_core_get_idx_by_code(chan,
-				code.code, pixel_format_index + 1);
-		}
-
-		code.index++;
-	}
-
-	if (!init_code) {
-		pixel_format_index =
-			tegra_core_get_idx_by_code(chan, TEGRA_VF_DEF, 0);
-		if (pixel_format_index >= 0) {
-			bitmap_set(chan->fmts_bitmap, pixel_format_index, 1);
-			init_code = TEGRA_VF_DEF;
-		}
-	}
-		/* Get the format based on active code of the sub-device */
-	ret = v4l2_subdev_call(subdev, pad, get_fmt, &cfg, &fmt);
-	if (ret)
-		return;
+	bitmap_fill(chan->fmts_bitmap, MAX_FORMAT_NUM);
 
 	/* Initiate the channel format to the first matched format */
 	chan->fmtinfo =
@@ -871,29 +795,6 @@ EXPORT_SYMBOL(tegra_channel_queued_buf_done);
  * subdevice set/unset operations
  * -----------------------------------------------------------------------------
  */
-int tegra_channel_write_blobs(struct tegra_channel *chan)
-{
-	struct v4l2_subdev *sd = NULL;
-	struct camera_common_data *s_data = NULL;
-
-	/* for TPG, do nothing */
-	if (chan->pg_mode)
-		return 0;
-
-	sd = chan->subdev_on_csi;
-	if (!sd)
-		return -EINVAL;
-
-	s_data = to_camera_common_data(sd->dev);
-	if (!s_data)
-		return 0;
-
-	if (!is_tvcf_supported(s_data->version))
-		return 0;
-
-	return tegracam_write_blobs(s_data->tegracam_ctrl_hdl);
-}
-EXPORT_SYMBOL(tegra_channel_write_blobs);
 
 int tegra_channel_set_stream(struct tegra_channel *chan, bool on)
 {
@@ -1070,32 +971,21 @@ tegra_channel_querycap(struct file *file, void *fh, struct v4l2_capability *cap)
 
 static int
 tegra_channel_enum_framesizes(struct file *file, void *fh,
-			      struct v4l2_frmsizeenum *sizes)
+			      struct v4l2_frmsizeenum *fsize)
 {
-	struct tegra_channel *chan = video_drvdata(file);
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-	struct v4l2_subdev_frame_size_enum fse = { };
-	struct v4l2_subdev_pad_config pad_cfg = { };
-	struct v4l2_subdev_state cfg = {.pads = &pad_cfg};
-	int ret = 0;
-
-	/* Convert v4l2 pixel format (fourcc) into media bus format code */
-	fse.code = tegra_core_get_code_by_fourcc(chan, sizes->pixel_format, 0);
-	if (fse.code < 0)
+	if (fsize->index)
 		return -EINVAL;
-	fse.index = sizes->index;
-	fse.which = V4L2_SUBDEV_FORMAT_ACTIVE;
-	fse.pad = 0;
 
-	ret = v4l2_subdev_call(sd, pad, enum_frame_size, &cfg, &fse);
+	fsize->type = V4L2_FRMSIZE_TYPE_STEPWISE;
+	fsize->stepwise.min_width = 32;
+	fsize->stepwise.max_width = 65535;
+	fsize->stepwise.step_width = 2;
 
-	if (!ret) {
-		sizes->type = V4L2_FRMSIZE_TYPE_DISCRETE;
-		sizes->discrete.width = fse.max_width;
-		sizes->discrete.height = fse.max_height;
-	}
+	fsize->stepwise.min_height = 32;
+	fsize->stepwise.max_height = 65535;
+	fsize->stepwise.step_height = 2;
 
-	return ret;
+	return 0;
 }
 
 static int
@@ -1150,141 +1040,6 @@ tegra_channel_enum_format(struct file *file, void *fh, struct v4l2_fmtdesc *f)
 	return 0;
 }
 
-static int
-tegra_channel_g_edid(struct file *file, void *fh, struct v4l2_edid *edid)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-
-	if (!v4l2_subdev_has_op(sd, pad, get_edid))
-		return -ENOTTY;
-
-	return v4l2_subdev_call(sd, pad, get_edid, edid);
-}
-
-static int
-tegra_channel_s_edid(struct file *file, void *fh, struct v4l2_edid *edid)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-
-	if (!v4l2_subdev_has_op(sd, pad, set_edid))
-		return -ENOTTY;
-
-	return v4l2_subdev_call(sd, pad, set_edid, edid);
-}
-
-static int
-tegra_channel_g_dv_timings(struct file *file, void *fh,
-		struct v4l2_dv_timings *timings)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-
-#if defined(NV_V4L2_SUBDEV_PAD_OPS_STRUCT_HAS_DV_TIMINGS) /* Linux v6.10 */
-	if (!v4l2_subdev_has_op(chan->subdev_on_csi, pad, g_dv_timings))
-		return -ENOTTY;
-
-	return v4l2_device_call_until_err(chan->video->v4l2_dev,
-			chan->grp_id, pad, g_dv_timings, 0, timings);
-#else
-	if (!v4l2_subdev_has_op(chan->subdev_on_csi, video, g_dv_timings))
-		return -ENOTTY;
-
-	return v4l2_device_call_until_err(chan->video->v4l2_dev,
-			chan->grp_id, video, g_dv_timings, timings);
-#endif
-}
-
-static int
-tegra_channel_s_dv_timings(struct file *file, void *fh,
-		struct v4l2_dv_timings *timings)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-	struct v4l2_bt_timings *bt = &timings->bt;
-	struct v4l2_dv_timings curr_timings;
-	int ret;
-
-#if defined(NV_V4L2_SUBDEV_PAD_OPS_STRUCT_HAS_DV_TIMINGS) /* Linux v6.10 */
-	if (!v4l2_subdev_has_op(chan->subdev_on_csi, pad, s_dv_timings))
-#else
-	if (!v4l2_subdev_has_op(chan->subdev_on_csi, video, s_dv_timings))
-#endif
-		return -ENOTTY;
-
-	ret = tegra_channel_g_dv_timings(file, fh, &curr_timings);
-	if (ret)
-		return ret;
-
-	if (tegra_v4l2_match_dv_timings(timings, &curr_timings, 0, false))
-		return 0;
-
-	if (vb2_is_busy(&chan->queue))
-		return -EBUSY;
-
-#if defined(NV_V4L2_SUBDEV_PAD_OPS_STRUCT_HAS_DV_TIMINGS) /* Linux v6.10 */
-	ret = v4l2_device_call_until_err(chan->video->v4l2_dev,
-			chan->grp_id, pad, s_dv_timings, 0, timings);
-#else
-	ret = v4l2_device_call_until_err(chan->video->v4l2_dev,
-			chan->grp_id, video, s_dv_timings, timings);
-#endif
-	if (!ret)
-		tegra_channel_update_format(chan, bt->width, bt->height,
-			chan->fmtinfo->fourcc, &chan->fmtinfo->bpp,
-			chan->preferred_stride);
-
-	if (chan->total_ports > 1)
-		update_gang_mode(chan);
-
-	return ret;
-}
-
-static int
-tegra_channel_query_dv_timings(struct file *file, void *fh,
-		struct v4l2_dv_timings *timings)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-
-#if defined(NV_V4L2_SUBDEV_PAD_OPS_STRUCT_HAS_DV_TIMINGS) /* Linux v6.10 */
-	if (!v4l2_subdev_has_op(chan->subdev_on_csi, pad, query_dv_timings))
-		return -ENOTTY;
-
-	return v4l2_device_call_until_err(chan->video->v4l2_dev,
-			chan->grp_id, pad, query_dv_timings, 0, timings);
-#else
-	if (!v4l2_subdev_has_op(chan->subdev_on_csi, video, query_dv_timings))
-		return -ENOTTY;
-
-	return v4l2_device_call_until_err(chan->video->v4l2_dev,
-			chan->grp_id, video, query_dv_timings, timings);
-#endif
-}
-
-static int
-tegra_channel_enum_dv_timings(struct file *file, void *fh,
-		struct v4l2_enum_dv_timings *timings)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-
-	if (!v4l2_subdev_has_op(sd, pad, enum_dv_timings))
-		return -ENOTTY;
-
-	return v4l2_subdev_call(sd, pad, enum_dv_timings, timings);
-}
-
-static int
-tegra_channel_dv_timings_cap(struct file *file, void *fh,
-		struct v4l2_dv_timings_cap *cap)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-
-	if (!v4l2_subdev_has_op(sd, pad, dv_timings_cap))
-		return -ENOTTY;
-
-	return v4l2_subdev_call(sd, pad, dv_timings_cap, cap);
-}
 
 int tegra_channel_s_ctrl(struct v4l2_ctrl *ctrl)
 {
@@ -1293,16 +1048,6 @@ int tegra_channel_s_ctrl(struct v4l2_ctrl *ctrl)
 	int err = 0;
 
 	switch (ctrl->id) {
-	case TEGRA_CAMERA_CID_GAIN_TPG:
-		{
-			if (chan->vi->csi != NULL &&
-				chan->vi->csi->tpg_gain_ctrl) {
-				struct v4l2_subdev *sd = chan->subdev_on_csi;
-
-				err = tegra_csi_tpg_set_gain(sd, &(ctrl->val));
-			}
-		}
-		break;
 	case TEGRA_CAMERA_CID_VI_BYPASS_MODE:
 		/* Prevent changing the bypass mode while the device is still streaming */
 		if (vb2_is_busy(&chan->queue))
@@ -1318,25 +1063,6 @@ int tegra_channel_s_ctrl(struct v4l2_ctrl *ctrl)
 			chan->bypass = true;
 		} else
 			chan->bypass = false;
-		break;
-	case TEGRA_CAMERA_CID_OVERRIDE_ENABLE:
-		{
-			struct v4l2_subdev *sd = chan->subdev_on_csi;
-			struct camera_common_data *s_data =
-				to_camera_common_data(sd->dev);
-
-			if (!s_data)
-				break;
-			if (switch_ctrl_qmenu[ctrl->val] == SWITCH_ON) {
-				s_data->override_enable = true;
-				dev_dbg(&chan->video->dev,
-					"enable override control\n");
-			} else {
-				s_data->override_enable = false;
-				dev_dbg(&chan->video->dev,
-					"disable override control\n");
-			}
-		}
 		break;
 	case TEGRA_CAMERA_CID_VI_HEIGHT_ALIGN:
 		chan->height_align = ctrl->val;
@@ -1379,16 +1105,6 @@ static const struct v4l2_ctrl_ops channel_ctrl_ops = {
 static const struct v4l2_ctrl_config common_custom_ctrls[] = {
 	{
 		.ops = &channel_ctrl_ops,
-		.id = TEGRA_CAMERA_CID_GAIN_TPG,
-		.name = "TPG Gain Ctrl",
-		.type = V4L2_CTRL_TYPE_INTEGER,
-		.min = 1,
-		.max = 64,
-		.step = 1,
-		.def = 1,
-	},
-	{
-		.ops = &channel_ctrl_ops,
 		.id = TEGRA_CAMERA_CID_GAIN_TPG_EMB_DATA_CFG,
 		.name = "TPG embedded data config",
 		.type = V4L2_CTRL_TYPE_BOOLEAN,
@@ -1402,17 +1118,6 @@ static const struct v4l2_ctrl_config common_custom_ctrls[] = {
 		.ops = &channel_ctrl_ops,
 		.id = TEGRA_CAMERA_CID_VI_BYPASS_MODE,
 		.name = "Bypass Mode",
-		.type = V4L2_CTRL_TYPE_INTEGER_MENU,
-		.def = 0,
-		.min = 0,
-		.max = ARRAY_SIZE(switch_ctrl_qmenu) - 1,
-		.menu_skip_mask = 0,
-		.qmenu_int = switch_ctrl_qmenu,
-	},
-	{
-		.ops = &channel_ctrl_ops,
-		.id = TEGRA_CAMERA_CID_OVERRIDE_ENABLE,
-		.name = "Override Enable",
 		.type = V4L2_CTRL_TYPE_INTEGER_MENU,
 		.def = 0,
 		.min = 0,
@@ -1443,73 +1148,6 @@ static const struct v4l2_ctrl_config common_custom_ctrls[] = {
 	},
 	{
 		.ops = &channel_ctrl_ops,
-		.id = TEGRA_CAMERA_CID_SENSOR_MODES,
-		.name = "Sensor Modes",
-		.type = V4L2_CTRL_TYPE_INTEGER,
-		.flags = V4L2_CTRL_FLAG_READ_ONLY,
-		.min = 0,
-		.max = MAX_NUM_SENSOR_MODES,
-		.def = MAX_NUM_SENSOR_MODES,
-		.step = 1,
-	},
-	{
-		.ops = &channel_ctrl_ops,
-		.id = TEGRA_CAMERA_CID_SENSOR_SIGNAL_PROPERTIES,
-		.name = "Sensor Signal Properties",
-		.type = V4L2_CTRL_TYPE_U32,
-		.flags = V4L2_CTRL_FLAG_HAS_PAYLOAD |
-			 V4L2_CTRL_FLAG_READ_ONLY,
-		.min = 0,
-		.max = 0xFFFFFFFF,
-		.step = 1,
-		.def = 0,
-		.dims = { MAX_NUM_SENSOR_MODES,
-			  SENSOR_SIGNAL_PROPERTIES_CID_SIZE },
-	},
-	{
-		.ops = &channel_ctrl_ops,
-		.id = TEGRA_CAMERA_CID_SENSOR_IMAGE_PROPERTIES,
-		.name = "Sensor Image Properties",
-		.type = V4L2_CTRL_TYPE_U32,
-		.flags = V4L2_CTRL_FLAG_HAS_PAYLOAD |
-			 V4L2_CTRL_FLAG_READ_ONLY,
-		.min = 0,
-		.max = 0xFFFFFFFF,
-		.step = 1,
-		.def = 0,
-		.dims = { MAX_NUM_SENSOR_MODES,
-			  SENSOR_IMAGE_PROPERTIES_CID_SIZE },
-	},
-	{
-		.ops = &channel_ctrl_ops,
-		.id = TEGRA_CAMERA_CID_SENSOR_CONTROL_PROPERTIES,
-		.name = "Sensor Control Properties",
-		.type = V4L2_CTRL_TYPE_U32,
-		.flags = V4L2_CTRL_FLAG_HAS_PAYLOAD |
-			 V4L2_CTRL_FLAG_READ_ONLY,
-		.min = 0,
-		.max = 0xFFFFFFFF,
-		.step = 1,
-		.def = 0,
-		.dims = { MAX_NUM_SENSOR_MODES,
-			  SENSOR_CONTROL_PROPERTIES_CID_SIZE },
-	},
-	{
-		.ops = &channel_ctrl_ops,
-		.id = TEGRA_CAMERA_CID_SENSOR_DV_TIMINGS,
-		.name = "Sensor DV Timings",
-		.type = V4L2_CTRL_TYPE_U32,
-		.flags = V4L2_CTRL_FLAG_HAS_PAYLOAD |
-			 V4L2_CTRL_FLAG_READ_ONLY,
-		.min = 0,
-		.max = 0xFFFFFFFF,
-		.step = 1,
-		.def = 0,
-		.dims = { MAX_NUM_SENSOR_MODES,
-			  SENSOR_DV_TIMINGS_CID_SIZE },
-	},
-	{
-		.ops = &channel_ctrl_ops,
 		.id = TEGRA_CAMERA_CID_LOW_LATENCY,
 		.name = "Low Latency Mode",
 		.type = V4L2_CTRL_TYPE_BOOLEAN,
@@ -1529,90 +1167,6 @@ static const struct v4l2_ctrl_config common_custom_ctrls[] = {
 		.def = 0,
 	},
 };
-
-#define GET_TEGRA_CAMERA_CTRL(id, c)					\
-do {									\
-	c = v4l2_ctrl_find(&chan->ctrl_handler, TEGRA_CAMERA_CID_##id);	\
-	if (!c) {							\
-		dev_err(chan->vi->dev, "%s: could not find ctrl %s\n",	\
-			__func__, "##id");				\
-		return -EINVAL;						\
-	}								\
-} while (0)
-
-static int tegra_channel_sensorprops_setup(struct tegra_channel *chan)
-{
-	const struct v4l2_subdev *sd = chan->subdev_on_csi;
-	const struct camera_common_data *s_data =
-			to_camera_common_data(sd->dev);
-	const struct sensor_mode_properties *modes;
-	struct v4l2_ctrl *ctrl_modes;
-	struct v4l2_ctrl *ctrl_signalprops;
-	struct v4l2_ctrl *ctrl_imageprops;
-	struct v4l2_ctrl *ctrl_controlprops;
-	struct v4l2_ctrl *ctrl_dvtimings;
-	u32 i;
-
-	if (!s_data)
-		return 0;
-
-	GET_TEGRA_CAMERA_CTRL(SENSOR_MODES, ctrl_modes);
-	GET_TEGRA_CAMERA_CTRL(SENSOR_SIGNAL_PROPERTIES, ctrl_signalprops);
-	GET_TEGRA_CAMERA_CTRL(SENSOR_IMAGE_PROPERTIES, ctrl_imageprops);
-	GET_TEGRA_CAMERA_CTRL(SENSOR_CONTROL_PROPERTIES, ctrl_controlprops);
-	GET_TEGRA_CAMERA_CTRL(SENSOR_DV_TIMINGS, ctrl_dvtimings);
-
-	ctrl_modes->val = s_data->sensor_props.num_modes;
-	ctrl_modes->cur.val = s_data->sensor_props.num_modes;
-
-	/* Update the control sizes
-	 *
-	 * Note that the structs have size elems * sizeof(u32)
-	 * So to get the number of structs (elems * sizeof(u32)) / num_modes
-	 */
-	ctrl_signalprops->elems = s_data->sensor_props.num_modes *
-					SENSOR_SIGNAL_PROPERTIES_CID_SIZE;
-
-	ctrl_imageprops->elems = s_data->sensor_props.num_modes *
-					SENSOR_IMAGE_PROPERTIES_CID_SIZE;
-
-	ctrl_controlprops->elems = s_data->sensor_props.num_modes *
-					SENSOR_CONTROL_PROPERTIES_CID_SIZE;
-
-	ctrl_dvtimings->elems = s_data->sensor_props.num_modes *
-					SENSOR_DV_TIMINGS_CID_SIZE;
-
-	modes = s_data->sensor_props.sensor_modes;
-	for (i = 0; i < s_data->sensor_props.num_modes; i++) {
-		void *ptr = NULL;
-		u32 size;
-
-		size = sizeof(struct sensor_signal_properties);
-		ptr = ctrl_signalprops->p_new.p + (i * size);
-		memcpy(ptr, &modes[i].signal_properties, size);
-
-		size = sizeof(struct sensor_image_properties);
-		ptr = ctrl_imageprops->p_new.p + (i * size);
-		memcpy(ptr, &modes[i].image_properties, size);
-
-		size = sizeof(struct sensor_control_properties);
-		ptr = ctrl_controlprops->p_new.p + (i * size);
-		memcpy(ptr, &modes[i].control_properties, size);
-
-		size = sizeof(struct sensor_dv_timings);
-		ptr = ctrl_dvtimings->p_new.p + (i * size);
-		memcpy(ptr, &modes[i].dv_timings, size);
-	}
-	spec_bar();
-
-	/* Do not copy memory into p_cur block, reuse p_new */
-	ctrl_signalprops->p_cur.p = ctrl_signalprops->p_new.p;
-	ctrl_imageprops->p_cur.p = ctrl_imageprops->p_new.p;
-	ctrl_controlprops->p_cur.p = ctrl_controlprops->p_new.p;
-	ctrl_dvtimings->p_cur.p = ctrl_dvtimings->p_new.p;
-
-	return 0;
-}
 
 static int tegra_channel_setup_controls(struct tegra_channel *chan)
 {
@@ -1642,19 +1196,6 @@ static int tegra_channel_setup_controls(struct tegra_channel *chan)
 	/* Add new custom controls */
 	for (i = 0; i < ARRAY_SIZE(common_custom_ctrls); i++) {
 		switch (common_custom_ctrls[i].id) {
-			case TEGRA_CAMERA_CID_OVERRIDE_ENABLE:
-				/* don't create override control for pg mode */
-				if (chan->pg_mode)
-					continue;
-				break;
-			case TEGRA_CAMERA_CID_GAIN_TPG:
-				/* Skip the custom control for sensor and
-				 * for TPG which doesn't support gain control
-				 */
-				if ((vi->csi == NULL) || (chan->pg_mode &&
-					 !vi->csi->tpg_gain_ctrl))
-					continue;
-				break;
 			case TEGRA_CAMERA_CID_GAIN_TPG_EMB_DATA_CFG:
 				/* Skip the custom control for sensor and
 				 * for TPG which doesn't support embedded
@@ -1706,81 +1247,7 @@ error:
 	return ret;
 }
 
-static void tegra_channel_free_sensor_properties(
-		const struct v4l2_subdev *sensor_sd)
-{
-	struct camera_common_data *s_data;
-	struct tegra_csi_device *csi = tegra_get_mc_csi();
-	struct tegra_csi_channel *chan;
 
-	if (sensor_sd == NULL)
-		return;
-
-	s_data = to_camera_common_data(sensor_sd->dev);
-	if (s_data == NULL)
-		return;
-
-	if (s_data->sensor_props.sensor_modes)
-		devm_kfree(s_data->dev, s_data->sensor_props.sensor_modes);
-
-	s_data->sensor_props.sensor_modes = NULL;
-
-	/* remove reference to s_data */
-	list_for_each_entry(chan, &csi->csi_chans, list) {
-		if (chan->sensor_sd == sensor_sd)
-			chan->s_data = NULL;
-	}
-}
-
-static int tegra_channel_connect_sensor(
-	struct tegra_channel *chan, struct v4l2_subdev *sensor_sd)
-{
-	struct device *sensor_dev;
-	struct device_node *sensor_of_node;
-	struct tegra_csi_device *csi_device;
-	struct device_node *ep_node;
-
-	if (!chan)
-		return -EINVAL;
-
-	if (!sensor_sd)
-		return -EINVAL;
-
-	sensor_dev = sensor_sd->dev;
-	if (!sensor_dev)
-		return -EINVAL;
-
-	sensor_of_node = sensor_dev->of_node;
-	if (!sensor_of_node)
-		return -EINVAL;
-
-	csi_device = tegra_get_mc_csi();
-	WARN_ON(!csi_device);
-	if (!csi_device)
-		return -ENODEV;
-
-	for_each_endpoint_of_node(sensor_of_node, ep_node) {
-		struct device_node *csi_chan_of_node;
-		struct tegra_csi_channel *csi_chan;
-
-		csi_chan_of_node =
-			of_graph_get_remote_port_parent(ep_node);
-
-		list_for_each_entry(csi_chan, &csi_device->csi_chans, list) {
-			if (csi_chan->of_node == csi_chan_of_node) {
-				csi_chan->s_data =
-					to_camera_common_data(chan->subdev_on_csi->dev);
-				csi_chan->sensor_sd = chan->subdev_on_csi;
-				break;
-			}
-		}
-
-		of_node_put(csi_chan_of_node);
-
-	}
-
-	return 0;
-}
 
 static int map_to_sensor_type(u32 phy_mode)
 {
@@ -1926,7 +1393,6 @@ static void tegra_channel_populate_dev_info(struct tegra_camera_dev_info *cdev,
 
 void tegra_channel_remove_subdevices(struct tegra_channel *chan)
 {
-	tegra_channel_free_sensor_properties(chan->subdev_on_csi);
 	video_unregister_device(chan->video);
 	chan->video = NULL;
 	chan->num_subdevs = 0;
@@ -2038,49 +1504,16 @@ int tegra_channel_init_subdevices(struct tegra_channel *chan)
 		return ret;
 	}
 
-	ret = tegra_channel_sensorprops_setup(chan);
-	if (ret < 0) {
-		dev_err(chan->vi->dev, "%s: failed to setup sensor props\n",
-			__func__);
-		goto fail;
-	}
-
-	/* Add a link for the camera_common_data in the tegra_csi_channel. */
-	ret = tegra_channel_connect_sensor(chan, chan->subdev_on_csi);
-	if (ret < 0) {
-		dev_err(chan->vi->dev,
-			"%s: failed to connect sensor to channel\n", __func__);
-		goto fail;
-	}
 
 	tegra_channel_populate_dev_info(&camdev_info, chan);
 	ret = tegra_camera_device_register(&camdev_info, chan);
 
 	return ret;
 fail:
-	tegra_channel_free_sensor_properties(chan->subdev_on_csi);
 	return ret;
 }
 EXPORT_SYMBOL(tegra_channel_init_subdevices);
 
-#if 0
-struct v4l2_subdev *tegra_channel_find_linked_csi_subdev(
-	struct tegra_channel *chan)
-{
-	struct tegra_csi_device *csi = tegra_get_mc_csi();
-	struct tegra_csi_channel *csi_it;
-	int i = 0;
-
-	list_for_each_entry(csi_it, &csi->csi_chans, list) {
-		for (i = 0; i < chan->num_subdevs; i++)
-			if (chan->subdev[i] == &csi_it->subdev)
-				return chan->subdev[i];
-	}
-
-	return NULL;
-}
-EXPORT_SYMBOL(tegra_channel_find_linked_csi_subdev);
-#endif
 
 static int
 tegra_channel_get_format(struct file *file, void *fh,
@@ -2215,66 +1648,7 @@ static int tegra_channel_subscribe_event(struct v4l2_fh *fh,
 	return v4l2_ctrl_subscribe_event(fh, sub);
 }
 
-static int
-tegra_channel_enum_input(struct file *file, void *fh, struct v4l2_input *inp)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-	struct v4l2_subdev *sd_on_csi = chan->subdev_on_csi;
-	int ret, len;
 
-	if (inp->index)
-		return -EINVAL;
-
-	ret = v4l2_device_call_until_err(chan->video->v4l2_dev,
-			chan->grp_id, video, g_input_status, &inp->status);
-
-	if (ret == -ENODEV || sd_on_csi == NULL)
-		return -ENODEV;
-
-	inp->type = V4L2_INPUT_TYPE_CAMERA;
-#if defined(NV_V4L2_SUBDEV_PAD_OPS_STRUCT_HAS_DV_TIMINGS) /* Linux v6.10 */
-	if (v4l2_subdev_has_op(sd_on_csi, pad, s_dv_timings)) {
-#else
-	if (v4l2_subdev_has_op(sd_on_csi, video, s_dv_timings)) {
-#endif
-		inp->capabilities = V4L2_IN_CAP_DV_TIMINGS;
-		len = snprintf(inp->name,
-			sizeof(inp->name), "HDMI %u",
-			chan->port[0]);
-		if (len < 0)
-			return -EINVAL;
-	} else {
-		len = snprintf(inp->name,
-			sizeof(inp->name), "Camera %u",
-			chan->port[0]);
-		if (len < 0)
-			return -EINVAL;
-	}
-
-	return ret;
-}
-
-static int tegra_channel_g_input(struct file *file, void *priv, unsigned int *i)
-{
-	*i = 0;
-	return 0;
-}
-
-static int tegra_channel_s_input(struct file *file, void *priv, unsigned int i)
-{
-	if (i > 0)
-		return -EINVAL;
-	return 0;
-}
-
-static int tegra_channel_log_status(struct file *file, void *priv)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-
-	v4l2_device_call_all(chan->video->v4l2_dev,
-		chan->grp_id, core, log_status);
-	return 0;
-}
 
 static long tegra_channel_default_ioctl(struct file *file, void *fh,
 			bool use_prio, unsigned int cmd, void *arg)
@@ -2291,30 +1665,11 @@ static long tegra_channel_default_ioctl(struct file *file, void *fh,
 
 /* Implemented vidioc_s_parm and vidioc_g_parm ioctl to support multiple frame
  * rates */
-static int tegra_channel_s_parm(struct file *file, void *fh,
-               struct v4l2_streamparm *a)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-
-	return v4l2_s_parm_cap(chan->video, sd, a);
-}
-
-static int tegra_channel_g_parm(struct file *file, void *fh,
-               struct v4l2_streamparm *a)
-{
-	struct tegra_channel *chan = video_drvdata(file);
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-
-	return v4l2_g_parm_cap(chan->video, sd, a);
-}
 
 static const struct v4l2_ioctl_ops tegra_channel_ioctl_ops = {
 	.vidioc_querycap		= tegra_channel_querycap,
 	.vidioc_enum_framesizes		= tegra_channel_enum_framesizes,
 	.vidioc_enum_frameintervals	= tegra_channel_enum_frameintervals,
-	.vidioc_s_parm                  = tegra_channel_s_parm,
-	.vidioc_g_parm                  = tegra_channel_g_parm,
 	.vidioc_enum_fmt_vid_cap	= tegra_channel_enum_format,
 	.vidioc_g_fmt_vid_cap		= tegra_channel_get_format,
 	.vidioc_s_fmt_vid_cap		= tegra_channel_set_format,
@@ -2328,19 +1683,8 @@ static const struct v4l2_ioctl_ops tegra_channel_ioctl_ops = {
 	.vidioc_expbuf			= vb2_ioctl_expbuf,
 	.vidioc_streamon		= vb2_ioctl_streamon,
 	.vidioc_streamoff		= vb2_ioctl_streamoff,
-	.vidioc_g_edid			= tegra_channel_g_edid,
-	.vidioc_s_edid			= tegra_channel_s_edid,
-	.vidioc_s_dv_timings		= tegra_channel_s_dv_timings,
-	.vidioc_g_dv_timings		= tegra_channel_g_dv_timings,
-	.vidioc_query_dv_timings	= tegra_channel_query_dv_timings,
-	.vidioc_enum_dv_timings		= tegra_channel_enum_dv_timings,
-	.vidioc_dv_timings_cap		= tegra_channel_dv_timings_cap,
 	.vidioc_subscribe_event		= tegra_channel_subscribe_event,
 	.vidioc_unsubscribe_event	= v4l2_event_unsubscribe,
-	.vidioc_enum_input		= tegra_channel_enum_input,
-	.vidioc_g_input			= tegra_channel_g_input,
-	.vidioc_s_input			= tegra_channel_s_input,
-	.vidioc_log_status		= tegra_channel_log_status,
 	.vidioc_default			= tegra_channel_default_ioctl,
 };
 

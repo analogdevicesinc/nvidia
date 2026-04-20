@@ -85,51 +85,6 @@ static void vi5_init_video_formats(struct tegra_channel *chan)
 		chan->video_formats[i] = &vi5_video_formats[i];
 }
 
-static int tegra_vi5_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
-{
-	struct tegra_channel *chan = container_of(ctrl->handler,
-				struct tegra_channel, ctrl_handler);
-	struct v4l2_subdev *sd = chan->subdev_on_csi;
-	struct camera_common_data *s_data =
-				to_camera_common_data(sd->dev);
-	struct tegracam_ctrl_handler *handler;
-	struct tegracam_sensor_data *sensor_data;
-
-	if (!s_data)
-		return -EINVAL;
-	handler = s_data->tegracam_ctrl_hdl;
-	if (!handler)
-		return -EINVAL;
-	sensor_data = &handler->sensor_data;
-
-	/* TODO: Support reading blobs for multiple devices */
-	switch (ctrl->id) {
-	case TEGRA_CAMERA_CID_SENSOR_CONFIG: {
-		struct sensor_cfg *cfg = &s_data->sensor_props.cfg;
-
-		memcpy(ctrl->p_new.p, cfg, sizeof(struct sensor_cfg));
-		break;
-	}
-	case TEGRA_CAMERA_CID_SENSOR_MODE_BLOB: {
-		struct sensor_blob *blob = &sensor_data->mode_blob;
-
-		memcpy(ctrl->p_new.p, blob, sizeof(struct sensor_blob));
-		break;
-	}
-	case TEGRA_CAMERA_CID_SENSOR_CONTROL_BLOB: {
-		struct sensor_blob *blob = &sensor_data->ctrls_blob;
-
-		memcpy(ctrl->p_new.p, blob, sizeof(struct sensor_blob));
-		break;
-	}
-	default:
-		pr_err("%s: unknown ctrl id.\n", __func__);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
 static int tegra_vi5_s_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct tegra_channel *chan = container_of(ctrl->handler,
@@ -153,7 +108,6 @@ static int tegra_vi5_s_ctrl(struct v4l2_ctrl *ctrl)
 
 static const struct v4l2_ctrl_ops vi5_ctrl_ops = {
 	.s_ctrl	= tegra_vi5_s_ctrl,
-	.g_volatile_ctrl = tegra_vi5_g_volatile_ctrl,
 };
 
 static const struct v4l2_ctrl_config vi5_custom_ctrls[] = {
@@ -166,48 +120,6 @@ static const struct v4l2_ctrl_config vi5_custom_ctrls[] = {
 		.min = 1,
 		.max = 1,
 		.step = 1,
-	},
-	{
-		.ops = &vi5_ctrl_ops,
-		.id = TEGRA_CAMERA_CID_SENSOR_CONFIG,
-		.name = "Sensor configuration",
-		.type = V4L2_CTRL_TYPE_U32,
-		.flags = V4L2_CTRL_FLAG_READ_ONLY |
-			V4L2_CTRL_FLAG_HAS_PAYLOAD |
-			V4L2_CTRL_FLAG_VOLATILE,
-		.min = 0,
-		.max = 0xFFFFFFFF,
-		.def = 0,
-		.step = 1,
-		.dims = { SENSOR_CONFIG_SIZE },
-	},
-	{
-		.ops = &vi5_ctrl_ops,
-		.id = TEGRA_CAMERA_CID_SENSOR_MODE_BLOB,
-		.name = "Sensor mode I2C packet",
-		.type = V4L2_CTRL_TYPE_U32,
-		.flags = V4L2_CTRL_FLAG_READ_ONLY |
-			V4L2_CTRL_FLAG_HAS_PAYLOAD |
-			V4L2_CTRL_FLAG_VOLATILE,
-		.min = 0,
-		.max = 0xFFFFFFFF,
-		.def = 0,
-		.step = 1,
-		.dims = { SENSOR_MODE_BLOB_SIZE },
-	},
-	{
-		.ops = &vi5_ctrl_ops,
-		.id = TEGRA_CAMERA_CID_SENSOR_CONTROL_BLOB,
-		.name = "Sensor control I2C packet",
-		.type = V4L2_CTRL_TYPE_U32,
-		.flags = V4L2_CTRL_FLAG_READ_ONLY |
-			V4L2_CTRL_FLAG_HAS_PAYLOAD |
-			V4L2_CTRL_FLAG_VOLATILE,
-		.min = 0,
-		.max = 0xFFFFFFFF,
-		.def = 0,
-		.step = 1,
-		.dims = { SENSOR_CTRL_BLOB_SIZE },
 	},
 	{
 		.ops = &vi5_ctrl_ops,
@@ -616,10 +528,6 @@ static int vi5_channel_error_recover(struct tegra_channel *chan,
 	int err = 0;
 	unsigned int vi_port = 0;
 	struct tegra_channel_buffer *buf;
-#if 0
-	struct tegra_mc_vi *vi = chan->vi;
-	struct v4l2_subdev *csi_subdev;
-#endif
 
 	/* stop vi channel */
 	for (vi_port = 0; vi_port < chan->valid_ports; vi_port++) {
@@ -676,18 +584,6 @@ static int vi5_channel_error_recover(struct tegra_channel *chan,
 	if (queue_error)
 		vb2_queue_error(&chan->queue);
 
-#if 0
-	/* reset nvcsi stream */
-	csi_subdev = tegra_channel_find_linked_csi_subdev(chan);
-	if (!csi_subdev) {
-		dev_err(vi->dev, "unable to find linked csi subdev\n");
-		err = -1;
-		goto done;
-	}
-
-	v4l2_subdev_call(csi_subdev, core, sync,
-		V4L2_SYNC_EVENT_SUBDEV_ERROR_RECOVER);
-#endif
 
 	/* restart vi channel */
 	for (vi_port = 0; vi_port < chan->valid_ports; vi_port++) {
@@ -984,14 +880,9 @@ static int vi5_channel_start_streaming(struct vb2_queue *vq, u32 count)
 	if (ret < 0)
 		goto err_set_stream;
 
-	ret = tegra_channel_write_blobs(chan);
-	if (ret < 0)
-		goto err_write_blobs;
 
 	return 0;
 
-err_write_blobs:
-	tegra_channel_set_stream(chan, false);
 
 err_set_stream:
 	if (!chan->bypass)
