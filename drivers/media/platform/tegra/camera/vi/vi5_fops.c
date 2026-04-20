@@ -616,8 +616,10 @@ static int vi5_channel_error_recover(struct tegra_channel *chan,
 	int err = 0;
 	unsigned int vi_port = 0;
 	struct tegra_channel_buffer *buf;
+#if 0
 	struct tegra_mc_vi *vi = chan->vi;
 	struct v4l2_subdev *csi_subdev;
+#endif
 
 	/* stop vi channel */
 	for (vi_port = 0; vi_port < chan->valid_ports; vi_port++) {
@@ -674,6 +676,7 @@ static int vi5_channel_error_recover(struct tegra_channel *chan,
 	if (queue_error)
 		vb2_queue_error(&chan->queue);
 
+#if 0
 	/* reset nvcsi stream */
 	csi_subdev = tegra_channel_find_linked_csi_subdev(chan);
 	if (!csi_subdev) {
@@ -682,7 +685,6 @@ static int vi5_channel_error_recover(struct tegra_channel *chan,
 		goto done;
 	}
 
-#if 0 /* disable for Canonical kernel */
 	v4l2_subdev_call(csi_subdev, core, sync,
 		V4L2_SYNC_EVENT_SUBDEV_ERROR_RECOVER);
 #endif
