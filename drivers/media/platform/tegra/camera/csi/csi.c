@@ -212,26 +212,14 @@ stream_okay:
 static void deskew_setup(struct tegra_csi_channel *chan,
 				struct nvcsi_deskew_context *deskew_ctx)
 {
-	struct sensor_signal_properties *sig_props;
-	struct sensor_properties *props;
 	int i;
-	int mode_idx = -1;
 	u64 pix_clk_hz = 0;
 	u32 deskew_enable = 0;
 	unsigned int csi_lane_start = 0;
 	unsigned int csi_port, csi_lanes;
 
-	if (chan->s_data == NULL)
-		return;
-
-	mode_idx = chan->s_data->mode_prop_idx;
-	props =  &chan->s_data->sensor_props;
-	sig_props = &props->sensor_modes[mode_idx].signal_properties;
-	if (sig_props->serdes_pixel_clock.val != 0ULL)
-		pix_clk_hz = sig_props->serdes_pixel_clock.val;
-	else
-		pix_clk_hz = sig_props->pixel_clock.val;
-	deskew_enable = sig_props->deskew_initial_enable;
+	pix_clk_hz = read_mipi_clk_from_dt(chan);
+	deskew_enable = 1;
 
 	if (pix_clk_hz >= CLK_HZ_FOR_DESKEW && deskew_enable) {
 		csi_port = chan->ports[0].csi_port;
