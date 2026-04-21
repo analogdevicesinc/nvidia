@@ -74,9 +74,6 @@ struct tegra_csi_device {
 	struct tegra_csi_port *ports;
 	struct media_pad *pads;
 
-#if 0
-	unsigned int clk_freq;
-#endif
 	int num_ports;
 	int num_channels;
 	struct list_head csi_chans;
@@ -137,14 +134,7 @@ static inline struct tegra_csi_device *to_csi(struct v4l2_subdev *subdev)
 }
 
 u32 read_phy_mode_from_dt(struct tegra_csi_channel *chan);
-#if 0
-u32 read_settle_time_from_dt(struct tegra_csi_channel *chan);
-#endif
 u64 read_mipi_clk_from_dt(struct tegra_csi_channel *chan);
-#if 0
-void set_csi_portinfo(struct tegra_csi_device *csi,
-	unsigned int port, unsigned int numlanes);
-#endif
 void tegra_csi_status(struct tegra_csi_channel *chan, int port_idx);
 int tegra_csi_error(struct tegra_csi_channel *chan, int port_idx);
 int tegra_csi_start_streaming(struct tegra_csi_channel *chan, int port_idx);
@@ -153,10 +143,6 @@ int tegra_csi_tpg_set_gain(struct v4l2_subdev *sd, void *arg);
 void tegra_csi_error_recover(struct tegra_csi_channel *chan, int port_idx);
 int tegra_csi_init(struct tegra_csi_device *csi,
 		struct platform_device *pdev);
-#if 0
-int tegra_csi_mipi_calibrate(struct tegra_csi_device *csi,
-				bool on);
-#endif
 int tegra_csi_media_controller_init(struct tegra_csi_device *csi,
 				struct platform_device *pdev);
 int tegra_csi_media_controller_remove(struct tegra_csi_device *csi);

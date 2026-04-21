@@ -46,25 +46,6 @@ struct tegra_csi_device *tegra_get_mc_csi(void)
 }
 EXPORT_SYMBOL(tegra_get_mc_csi);
 
-#if 0
-static int set_csi_properties(struct tegra_csi_device *csi,
-			struct platform_device *pdev)
-{
-	struct camera_common_data *s_data = &csi->s_data[0];
-
-	/*
-	* These values are only used for tpg mode
-	* With sensor, CSI power and clock info are provided
-	* by the sensor sub device
-	*/
-	s_data->csi_port = 0;
-	s_data->numlanes = 12;
-	csi->clk_freq = TEGRA_CLOCK_CSI_PORT_MAX;
-
-	return 0;
-}
-#endif
-
 static void update_blank_intervals(struct tegra_csi_channel *chan,
 		int portnum, int fmtindex)
 {
@@ -77,100 +58,36 @@ static void update_blank_intervals(struct tegra_csi_channel *chan,
 	port->v_blank = tegra_csi_tpg_frmfmt[fmtindex].v_blank;
 }
 
-static struct sensor_mode_properties*
-read_mode_from_dt(struct camera_common_data *s_data)
-{
-	struct sensor_mode_properties *mode = NULL;
-
-	if (s_data) {
-		int idx = s_data->mode_prop_idx;
-
-		if (idx < s_data->sensor_props.num_modes)
-			mode = &s_data->sensor_props.sensor_modes[idx];
-	}
-
-	return mode;
-}
-
-#if 0
-u32 read_settle_time_from_dt(struct tegra_csi_channel *chan)
-{
-	struct camera_common_data *s_data = chan->s_data;
-	struct sensor_mode_properties *mode = read_mode_from_dt(s_data);
-	struct device *dev = chan->csi->dev;
-	unsigned int cil_settletime = 0;
-
-	if (mode) {
-		dev_dbg(dev, "settle time reading from props\n");
-		cil_settletime = mode->signal_properties.cil_settletime;
-	} else if (chan->of_node) {
-		int err = 0;
-		const char *str;
-
-		dev_dbg(dev, "settle time reading from of_node\n");
-		err = of_property_read_string(chan->of_node, "cil_settletime",
-			&str);
-		if (!err) {
-			err = kstrtou32(str, 10, &cil_settletime);
-			if (err) {
-				dev_dbg(dev,
-					"no cil_settletime in of_node");
-				cil_settletime = 0;
-			}
-		}
-	}
-
-	return cil_settletime;
-}
-#endif
-
 u32 read_phy_mode_from_dt(struct tegra_csi_channel *chan)
 {
-	struct camera_common_data *s_data = chan->s_data;
-	struct sensor_mode_properties *mode = read_mode_from_dt(s_data);
-	struct device *dev = chan->csi->dev;
-	u32 phy_mode = 0;
+	struct v4l2_mbus_config mbus_cfg = { };
+	int ret;
 
-	if (mode) {
-		dev_dbg(dev, "settle time reading from props\n");
-		phy_mode = mode->signal_properties.phy_mode;
-	} else {
-		dev_dbg(dev, "phy mode unavailable in props, use default\n");
-		phy_mode = CSI_PHY_MODE_DPHY;
-	}
+	ret = v4l2_subdev_call(chan->source_sd, pad, get_mbus_config,
+			       chan->source_sd_pad, &mbus_cfg);
+	if (ret)
+		return ret;
 
-	return phy_mode;
+	if (mbus_cfg.type == V4L2_MBUS_CSI2_DPHY)
+		return CSI_PHY_MODE_DPHY;
+	else if (mbus_cfg.type == V4L2_MBUS_CSI2_CPHY)
+		return CSI_PHY_MODE_CPHY;
+
+	return -EINVAL;
 }
 
 u64 read_mipi_clk_from_dt(struct tegra_csi_channel *chan)
 {
-	struct sensor_signal_properties *sig_props;
-	struct sensor_properties *props;
-	u64 mipi_clk = 0;
-	int mode_idx;
+	struct v4l2_mbus_config mbus_cfg = { };
+	int ret;
 
-	if (chan && chan->s_data) {
-		mode_idx = chan->s_data->mode_prop_idx;
-		props =  &chan->s_data->sensor_props;
-		sig_props = &props->sensor_modes[mode_idx].signal_properties;
-		mipi_clk = sig_props->mipi_clock.val;
-	}
+	ret = v4l2_subdev_call(chan->source_sd, pad, get_mbus_config,
+			       chan->source_sd_pad, &mbus_cfg);
+	if (ret)
+		return 0;
 
-	return mipi_clk;
+	return mbus_cfg.link_freq;
 }
-
-#if 0
-void set_csi_portinfo(struct tegra_csi_device *csi,
-	unsigned int port, unsigned int numlanes)
-{
-	struct camera_common_data *s_data = &csi->s_data[port];
-
-	s_data->csi_port = port;
-	s_data->numlanes = numlanes;
-	s_data->def_clk_freq = TEGRA_CLOCK_CSI_PORT_MAX;
-}
-EXPORT_SYMBOL(set_csi_portinfo);
-#endif
 
 int tegra_csi_power(struct tegra_csi_device *csi,
 			struct tegra_csi_channel *chan, int enable)
@@ -224,22 +141,6 @@ static int tegra_csi_s_power(struct v4l2_subdev *subdev, int enable)
 
 	return err;
 }
-
-#if 0 /* disable for Canonical kernel */
-static int tegra_csi_sync_event(struct v4l2_subdev *subdev,
-	unsigned int sync_events)
-{
-	int err = 0;
-	struct tegra_channel *chan = v4l2_get_subdev_hostdata(subdev);
-	struct tegra_csi_device *csi = to_csi(subdev);
-	struct tegra_csi_channel *csi_chan = to_csi_chan(subdev);
-
-	if (sync_events & V4L2_SYNC_EVENT_SUBDEV_ERROR_RECOVER)
-		err = tegra_csi_error_recovery(chan, csi, csi_chan);
-
-	return err;
-}
-#endif
 
 /*
  * -----------------------------------------------------------------------------
@@ -765,9 +666,6 @@ static struct v4l2_subdev_pad_ops tegra_csi_pad_ops = {
 
 static struct v4l2_subdev_core_ops tegra_csi_core_ops = {
 	.s_power	= tegra_csi_s_power,
-#if 0 /* disable for Canonical kernel */
-	.sync		= tegra_csi_sync_event,
-#endif
 };
 
 static struct v4l2_subdev_ops tegra_csi_ops = {
@@ -871,12 +769,6 @@ int tegra_csi_init(struct tegra_csi_device *csi,
 	struct nvhost_device_data *pdata = platform_get_drvdata(pdev);
 
 	csi->dev = &pdev->dev;
-
-#if 0
-	err = set_csi_properties(csi, pdev);
-	if (err)
-		return err;
-#endif
 
 	csi->iomem_base = pdata->aperture[0];
 	csi->fops->hw_init(csi);
@@ -1112,41 +1004,6 @@ void tpg_csi_media_controller_cleanup(struct tegra_csi_device *csi)
 	csi->tpg_start = NULL;
 }
 EXPORT_SYMBOL(tpg_csi_media_controller_cleanup);
-
-#if 0
-int tegra_csi_mipi_calibrate(struct tegra_csi_device *csi,
-				bool on)
-{
-	struct tegra_csi_channel *chan;
-
-	if (list_empty(&csi->csi_chans))
-		return 0;
-
-	if (!on) {
-		tegra_mipi_bias_pad_disable();
-		return 0;
-	}
-
-	tegra_mipi_bias_pad_enable();
-
-	list_for_each_entry(chan, &csi->csi_chans, list) {
-		int ret = 0;
-
-		if (chan->pg_mode)
-			continue;
-
-		if (chan->s_data == NULL)
-			continue;
-
-		ret = csi->fops->mipical(chan);
-		if (ret)
-			dev_err(csi->dev,
-				"calibration failed with %d error\n", ret);
-	}
-
-	return 0;
-}
-#endif
 
 int tegra_csi_media_controller_init(struct tegra_csi_device *csi,
 				    struct platform_device *pdev)
