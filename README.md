@@ -1,4 +1,4 @@
-# GMSL drivers for NVIDIA Jetson
+# GMSL drivers for NVIDIA Jetson L4T 35.3.1
 
 ## Table of contents
 1. [Applying patches to the Jetson Linux tree](#applying-patches-to-the-jetson-linux-tree)
@@ -15,9 +15,9 @@
 
 To be able to apply the patches provided in this repo, you have to clone it in a location of your choice by running the following command.
 
-`git clone https://github.com/analogdevicesinc/nvidia --single-branch -b gmsl/main nvidia-gmsl`
+`git clone https://github.com/analogdevicesinc/nvidia --single-branch -b gmsl/jetson_35.3.1/main nvidia-gmsl`
 
-Further instructions can be found in the [Main documentation](https://github.com/analogdevicesinc/nvidia).
+Further instructions can be found in the [Driver Build documentation](https://github.com/analogdevicesinc/nvidia/blob/gmsl/jetson_35.3.1/main/README_DRIVER_BUILD.md).
 
 ## Releases
 
